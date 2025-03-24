@@ -73,8 +73,9 @@ export class AuthController {
       const correctFrontendUrl = 'https://tez-social-frontend.vercel.app';
       this.logger.log(`DEBUG: Using hardcoded frontend URL: ${correctFrontendUrl}`);
       
-      // Create a URL with the token as a parameter
-      const redirectUrl = `${correctFrontendUrl}/auth/google/success?token=${access_token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+      // Store auth data in local storage using a landing page
+      // The success page doesn't exist yet, so redirect to a login page with params
+      const redirectUrl = `${correctFrontendUrl}/login?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
       
       // Log the exact redirect URL for debugging
       this.logger.log(`Redirecting to frontend URL: ${redirectUrl}`);

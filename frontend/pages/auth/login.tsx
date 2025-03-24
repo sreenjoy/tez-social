@@ -6,13 +6,15 @@ import useAuthStore from '../../store/authStore';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, error: authError, isLoading, isAuthenticated, clearError } = useAuthStore();
+  const { token, googleUser, source, error: routerError } = router.query;
+  const { login, error: authError, isLoading, isAuthenticated, clearError, setAuthState } = useAuthStore();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showDebug, setShowDebug] = useState(false);
   const [debugLogs, setDebugLogs] = useState<any[]>([]);
+  const [googleAuthProcessing, setGoogleAuthProcessing] = useState(false);
 
   // Load debug logs from localStorage
   useEffect(() => {
@@ -27,11 +29,55 @@ export default function LoginPage() {
     }
   }, [showDebug]);
 
+  // Handle Google OAuth redirect
+  useEffect(() => {
+    if (!router.isReady) return;
+    
+    // Check if we have Google OAuth parameters
+    if (token && googleUser && source === 'google') {
+      setGoogleAuthProcessing(true);
+      console.log("Login page: Detected Google OAuth redirect with token");
+      
+      try {
+        // Parse the user data
+        const userData = typeof googleUser === 'string' ? JSON.parse(decodeURIComponent(googleUser)) : googleUser;
+        
+        // Store auth data
+        localStorage.setItem('token', token.toString());
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('isLoggedIn', 'true');
+        
+        // Update auth store
+        setAuthState({
+          isAuthenticated: true,
+          user: userData, 
+          token: token.toString()
+        });
+        
+        console.log("Login page: Google OAuth data processed successfully");
+        
+        // Navigate to dashboard after short delay
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+      } catch (e) {
+        console.error("Login page: Failed to process Google OAuth data", e);
+        setError('Failed to process Google authentication data. Please try again.');
+        setGoogleAuthProcessing(false);
+      }
+    }
+    
+    // Show error from router if present
+    if (routerError) {
+      setError(typeof routerError === 'string' ? routerError : 'Authentication failed');
+    }
+  }, [router.isReady, token, googleUser, source, routerError, setAuthState]);
+
   useEffect(() => {
     // If already authenticated, redirect to dashboard with a slight delay
     // to allow logs to be captured
     console.log("Login page: Auth state check", { isAuthenticated, authError });
-    if (isAuthenticated) {
+    if (isAuthenticated && !googleAuthProcessing) {
       console.log("Login page: Redirecting to dashboard");
       
       // Set a short delay before redirecting to ensure logs are captured
@@ -46,7 +92,7 @@ export default function LoginPage() {
       setError(authError);
       clearError();
     }
-  }, [isAuthenticated, authError, router, clearError]);
+  }, [isAuthenticated, authError, router, clearError, googleAuthProcessing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +122,29 @@ export default function LoginPage() {
     localStorage.removeItem('isLoggedIn');
     alert('Auth data cleared. Refresh the page to see changes.');
   };
+
+  // Show a processing screen if we're handling Google auth
+  if (googleAuthProcessing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <Head>
+          <title>Processing Google Sign-In | Tez Social</title>
+        </Head>
+        
+        <div className="max-w-md w-full space-y-8 text-center">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Processing Google Sign-In
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Please wait while we complete your authentication...
+          </p>
+          <div className="mt-5 flex justify-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
