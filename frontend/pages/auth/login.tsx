@@ -149,8 +149,10 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  // You can implement Google auth here using the authApi
-                  window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+                  // Use the authApi.googleAuth() method from our API service
+                  import('../../services/api').then(({ authApi }) => {
+                    authApi.googleAuth();
+                  });
                 }}
                 className="font-medium text-indigo-600 hover:text-indigo-500"
               >

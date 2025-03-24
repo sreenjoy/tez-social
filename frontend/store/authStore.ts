@@ -22,6 +22,7 @@ interface AuthState {
   logout: () => void;
   checkAuth: () => Promise<void>;
   clearError: () => void;
+  setAuthState: (state: { isAuthenticated: boolean; user: any; token: string }) => void;
 }
 
 const safeParseJSON = (str: string | null): any => {
@@ -331,6 +332,16 @@ const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false 
       });
     }
+  },
+  
+  setAuthState: (state: { isAuthenticated: boolean; user: any; token: string }) => {
+    console.log('Setting auth state:', state);
+    set({
+      isAuthenticated: state.isAuthenticated,
+      user: state.user,
+      isLoading: false,
+      error: null,
+    });
   },
   
   clearError: () => set({ error: null })
