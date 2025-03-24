@@ -66,21 +66,19 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Login response:', response.data);
       logToStorage('login_response', response.data);
       
-      // Extract token and user data from the response
-      // The backend doesn't include user data in the login response,
-      // so we create a minimal user object with the email
-      const userData = {
-        email,
-        firstName: email.split('@')[0]
-      };
-      
-      // Check if we have a token in the response
+      // Extract token from the response
       const responseData = response.data.data || response.data;
       const token = responseData.access_token || responseData.token;
       
       if (!token) {
         throw new Error('No token received from server');
       }
+      
+      // Create a user object based on the email since the backend doesn't return user data
+      const userData = {
+        email,
+        firstName: email.split('@')[0]
+      };
       
       // Store token and user data
       localStorage.setItem('token', token);
@@ -109,10 +107,18 @@ const useAuthStore = create<AuthState>((set, get) => ({
       
       logToStorage('login_error', { message: errorMessage, error });
       
+      // Make sure we're not authenticated if login fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isLoggedIn');
+      
       set({ 
-        error: errorMessage, 
+        error: errorMessage,
+        user: null,
+        isAuthenticated: false,
         isLoading: false 
       });
+      
       throw new Error(errorMessage);
     }
   },
