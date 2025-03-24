@@ -11,6 +11,16 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('health')
+  healthCheck() {
+    return {
+      status: 'ok',
+      time: new Date().toISOString(),
+      service: 'tez-social-api',
+      environment: process.env.NODE_ENV || 'development'
+    };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('protected')
   getProtected(): string {
