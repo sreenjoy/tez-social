@@ -42,15 +42,21 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  googleAuth() {
+  googleAuth(@Req() req: any) {
+    // Add detailed logging
+    this.logger.log('Google OAuth request received');
+    this.logger.log(`Request URL: ${req.url}`);
+    this.logger.log(`Host: ${req.headers.host}`);
+    
     // This will redirect to Google OAuth
-    this.logger.log('Redirecting to Google OAuth with hardcoded callback URL');
+    return { message: 'Redirecting to Google OAuth' };
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthCallback(@Req() req: any, @Res() res: Response) {
     this.logger.log('Google OAuth callback received');
+    this.logger.log(`Callback URL: ${req.url}`);
     
     const { access_token, user } = req.user;
     
