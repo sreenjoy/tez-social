@@ -45,7 +45,7 @@ const GoogleDebugPage = () => {
         
         <ol className="list-decimal pl-6 mb-6 space-y-2">
           <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console Credentials</a></li>
-          <li>Find your OAuth 2.0 Client ID for this project (Client ID: 559553261529-3v55f17t9mu5hqhbbehlv2a2j56aia8n.apps.googleusercontent.com)</li>
+          <li>Find your OAuth 2.0 Client ID for this project (Client ID: 1054907431747-9qjg5goodfvpfvrvfrfqeogih239rm4n.apps.googleusercontent.com)</li>
           <li>Click "Edit" on the client</li>
           <li>Under "Authorized redirect URIs", add the exact URL shown above</li>
           <li>Ensure there are no trailing slashes or extra characters</li>
