@@ -14,16 +14,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ) {
     const clientID = configService.get('GOOGLE_CLIENT_ID');
     const clientSecret = configService.get('GOOGLE_CLIENT_SECRET');
-    const callbackURL = configService.get('GOOGLE_CALLBACK_URL') || 'http://localhost:3001/api/auth/google/callback';
+    const callbackURL = configService.get('GOOGLE_CALLBACK_URL');
 
     if (!clientID || !clientSecret) {
-      // Log warning but don't throw error for development flexibility
-      console.warn('Google OAuth credentials not configured. Google login will not work.');
+      console.warn('Google OAuth credentials not configured properly.');
     }
 
     super({
-      clientID: clientID || 'dummy-client-id-for-dev',
-      clientSecret: clientSecret || 'dummy-client-secret-for-dev',
+      clientID,
+      clientSecret,
       callbackURL,
       scope: ['email', 'profile'],
     });

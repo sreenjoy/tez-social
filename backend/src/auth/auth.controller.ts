@@ -13,7 +13,7 @@ export class AuthController {
     private authService: AuthService,
     private configService: ConfigService,
   ) {
-    this.frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    this.frontendUrl = this.configService.get('FRONTEND_URL') || '';
   }
 
   @Post('register')
