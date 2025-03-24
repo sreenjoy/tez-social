@@ -66,21 +66,23 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Login response:', response.data);
       logToStorage('login_response', response.data);
       
-      // Extract token from the response
-      // Check both standard format and nested data format
-      const token = response.data.access_token || 
-                   (response.data.data && response.data.data.access_token) || 
-                   response.data.token;
+      // Extract token from the response based on the actual API response format
+      // For the Railway backend, the format is: { statusCode, message, data: { access_token, user } }
+      const token = response.data.data?.access_token || 
+                   (response.data.token) || 
+                   null;
       
       if (!token) {
-        throw new Error('No token received from server');
+        throw new Error('No authentication token received from server');
       }
       
-      // Create a user object based on the email if the backend doesn't return user data
-      // This is a temporary solution until the backend provides complete user data
-      let userData = response.data.user || 
-                    (response.data.data && response.data.data.user) || 
-                    null;
+      console.log('Token received:', !!token);
+      logToStorage('token_received', { token: !!token });
+      
+      // Extract user data from the response based on the actual API response format
+      let userData = response.data.data?.user ||
+                   (response.data.user) || 
+                   null;
       
       if (!userData) {
         // Minimal user object for session if backend doesn't provide user details
@@ -142,31 +144,33 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Register response:', response.data);
       logToStorage('register_response', response.data);
       
-      // Extract token from the response
-      // Check both standard format and nested data format
-      const token = response.data.access_token || 
-                   (response.data.data && response.data.data.access_token) || 
-                   response.data.token;
+      // Extract token from the response based on the actual API response format
+      // For the Railway backend, the format is: { statusCode, message, data: { access_token, user } }
+      const token = response.data.data?.access_token || 
+                   (response.data.token) || 
+                   null;
       
       if (!token) {
-        throw new Error('No token received from server');
+        throw new Error('No authentication token received from server');
       }
       
-      // Create a user object based on the registration information
-      // This is a temporary solution until the backend provides complete user data
-      let userData = response.data.user || 
-                    (response.data.data && response.data.data.user) || 
+      console.log('Token received:', !!token);
+      logToStorage('token_received', { token: !!token });
+      
+      // Extract user data from the response based on the actual API response format
+      let userData = response.data.data?.user ||
+                    (response.data.user) || 
                     null;
       
       if (!userData) {
-        // Minimal user object for session if backend doesn't provide user details
+        // Create minimal user data if not provided by the API
         userData = {
           email,
           firstName: name
         };
       }
       
-      // Store token and user data
+      // Store token and user data in localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('isLoggedIn', 'true');
@@ -174,10 +178,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Auth state updated after registration:', { user: userData, isAuthenticated: true });
       logToStorage('register_success', { user: userData });
       
-      set({ 
-        user: userData, 
-        isAuthenticated: true, 
-        isLoading: false 
+      set({
+        user: userData,
+        isAuthenticated: true,
+        isLoading: false
       });
       
     } catch (error: any) {
@@ -221,12 +225,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
   
   checkAuth: async () => {
     set({ isLoading: true });
-    console.log('Checking auth...');
     
-    // First check if we have a token in localStorage
-    const token = localStorage.getItem('token');
-    
-    console.log('Local storage:', { token: !!token });
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     logToStorage('check_auth', { hasToken: !!token });
     
     if (!token) {
@@ -242,13 +242,41 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('getCurrentUser response:', response.data);
       logToStorage('get_current_user_response', response.data);
       
-      // Extract user data from the response, handling different response formats
+      // If we get a successful response from the protected endpoint,
+      // it means our token is valid, but the endpoint doesn't return user data
+      if (response.data.statusCode === 200 && response.data.message === "This is a protected route") {
+        // Get the user data from localStorage since the API doesn't return it
+        const storedUser = safeParseJSON(localStorage.getItem('user'));
+        
+        if (storedUser && storedUser.email) {
+          console.log('Using stored user data since protected endpoint only confirms auth:', storedUser);
+          set({ 
+            user: storedUser, 
+            isAuthenticated: true, 
+            isLoading: false 
+          });
+          return;
+        }
+      }
+      
+      // For other endpoints that might return user data
       const userData = response.data.user || 
                       (response.data.data && response.data.data.user) || 
                       response.data.data || 
                       response.data;
       
       if (!userData || typeof userData !== 'object') {
+        // Fallback to stored user if API didn't return user data in expected format
+        const storedUser = safeParseJSON(localStorage.getItem('user'));
+        if (storedUser && storedUser.email) {
+          console.log('Using stored user data since API response format is unexpected:', storedUser);
+          set({ 
+            user: storedUser, 
+            isAuthenticated: true, 
+            isLoading: false 
+          });
+          return;
+        }
         throw new Error('Invalid user data returned from server');
       }
       
