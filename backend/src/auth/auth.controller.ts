@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Req, Res, HttpStatus, Logger, Query } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Req, Res, HttpStatus, Logger } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
@@ -42,23 +42,15 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  googleAuth(@Req() req: any) {
-    // Add detailed logging
-    this.logger.log('Google OAuth request received');
-    this.logger.log(`Request URL: ${req.url}`);
-    this.logger.log(`Host: ${req.headers.host}`);
-    
+  googleAuth() {
+    this.logger.log('Redirecting to Google OAuth');
     // This will redirect to Google OAuth
-    return { message: 'Redirecting to Google OAuth' };
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthCallback(@Req() req: any, @Res() res: Response) {
     this.logger.log('Google OAuth callback received');
-    this.logger.log(`Callback URL: ${req.url}`);
-    this.logger.log(`Original URL: ${req.originalUrl}`);
-    this.logger.log(`Request user: ${JSON.stringify(req.user || {})}`);
     
     try {
       const { access_token, user } = req.user || {};
@@ -75,19 +67,8 @@ export class AuthController {
       this.logger.log(`Redirecting to frontend: ${redirectUrl}`);
       return res.redirect(redirectUrl);
     } catch (error) {
-      this.logger.error(`Error in Google callback: ${error.message}`, error.stack);
+      this.logger.error(`Error in Google callback: ${error.message}`);
       return res.redirect(`${this.frontendUrl}/login?error=authentication_failed`);
     }
-  }
-
-  @Get('google-redirect')
-  async googleRedirect(@Res() res: Response) {
-    const clientID = this.configService.get('GOOGLE_CLIENT_ID');
-    const redirectUri = 'https://tez-social-production.up.railway.app/api/auth/google/callback';
-    
-    this.logger.log(`Redirecting to Google OAuth manually with callback: ${redirectUri}`);
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=email%20profile`;
-    
-    return res.redirect(authUrl);
   }
 } 
