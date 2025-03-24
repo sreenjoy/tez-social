@@ -9,104 +9,24 @@ const REDIRECT_AFTER_LOGIN = '/dashboard';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { token, googleUser, source, error: routerError } = router.query;
-  const { login, error: authError, isLoading, isAuthenticated, clearError, setAuthState, checkAuth } = useAuthStore();
+  const { login, error: authError, isLoading, isAuthenticated, clearError } = useAuthStore();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [googleAuthProcessing, setGoogleAuthProcessing] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-
-  // Handle Google OAuth redirect
-  useEffect(() => {
-    if (!router.isReady) return;
-    
-    // Log the query parameters for debugging
-    console.log('[LoginPage] Google OAuth parameters:', router.query);
-    setDebugInfo({
-      query: router.query,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Check if we have Google OAuth parameters
-    if (token) {
-      console.log('[LoginPage] Processing token:', token);
-      setGoogleAuthProcessing(true);
-      
-      try {
-        // Parse the user data
-        let userData;
-        if (googleUser) {
-          console.log('[LoginPage] Has googleUser data');
-          userData = typeof googleUser === 'string' ? JSON.parse(decodeURIComponent(googleUser)) : googleUser;
-        } else {
-          console.log('[LoginPage] No googleUser data, using fallback');
-          // Minimal user data as fallback
-          userData = { email: '', firstName: '' };
-        }
-        
-        console.log('[LoginPage] Processed user data:', userData);
-        
-        // Store auth data
-        localStorage.setItem('token', token.toString());
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('isLoggedIn', 'true');
-        
-        // Update auth store
-        setAuthState({
-          isAuthenticated: true,
-          user: userData, 
-          token: token.toString()
-        });
-        
-        console.log('[LoginPage] Auth state updated, validating token');
-        
-        // Validate token with backend
-        checkAuth().then(isValid => {
-          console.log('[LoginPage] Token validation result:', isValid);
-          
-          if (!isValid) {
-            throw new Error("Token validation failed");
-          }
-          
-          console.log('[LoginPage] Redirecting to dashboard');
-          
-          // Navigate to dashboard
-          window.location.href = REDIRECT_AFTER_LOGIN;
-        }).catch(err => {
-          console.error('[LoginPage] Token validation error:', err);
-          setError("Authentication verification failed. Please try again.");
-          setGoogleAuthProcessing(false);
-        });
-      } catch (e) {
-        console.error('[LoginPage] Error processing auth data:', e);
-        setError('Failed to process Google authentication data. Please try again.');
-        setGoogleAuthProcessing(false);
-      }
-    }
-    
-    // Show error from router if present
-    if (routerError) {
-      console.error('[LoginPage] Router error:', routerError);
-      setError(typeof routerError === 'string' ? routerError : 'Authentication failed');
-    }
-  }, [router.isReady, token, googleUser, source, routerError, setAuthState, checkAuth]);
 
   useEffect(() => {
     // If already authenticated, redirect to dashboard
-    if (isAuthenticated && !googleAuthProcessing) {
-      console.log('[LoginPage] Already authenticated, redirecting to dashboard');
+    if (isAuthenticated) {
       window.location.href = REDIRECT_AFTER_LOGIN;
     }
     
     // Show auth store errors
     if (authError) {
-      console.error('[LoginPage] Auth store error:', authError);
       setError(authError);
       clearError();
     }
-  }, [isAuthenticated, authError, clearError, googleAuthProcessing]);
+  }, [isAuthenticated, authError, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,38 +39,6 @@ export default function LoginPage() {
       setError(err.message || 'Failed to login. Please check your credentials.');
     }
   };
-
-  // Show a processing screen if we're handling Google auth
-  if (googleAuthProcessing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <Head>
-          <title>Processing Sign-In | Tez Social</title>
-        </Head>
-        
-        <div className="max-w-md w-full space-y-8 text-center">
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Processing Sign-In
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Please wait while we complete your authentication...
-          </p>
-          <div className="mt-5 flex justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-          </div>
-          
-          {debugInfo && (
-            <div className="mt-8 p-4 bg-gray-100 rounded-md text-xs text-left overflow-auto">
-              <details>
-                <summary className="cursor-pointer">Debug Info</summary>
-                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-              </details>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -213,37 +101,11 @@ export default function LoginPage() {
             </button>
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link href="/auth/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Don't have an account? Register
-              </Link>
-            </div>
-            
-            <div className="text-sm">
-              <button
-                type="button"
-                onClick={() => {
-                  console.log('[LoginPage] Starting Google OAuth flow');
-                  import('../../services/api').then(({ authApi }) => {
-                    authApi.googleAuth();
-                  });
-                }}
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Sign in with Google
-              </button>
-            </div>
+          <div className="text-sm">
+            <Link href="/auth/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Don't have an account? Register
+            </Link>
           </div>
-          
-          {debugInfo && (
-            <div className="mt-8 p-4 bg-gray-100 rounded-md text-xs text-left overflow-auto">
-              <details>
-                <summary className="cursor-pointer">Debug Info</summary>
-                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-              </details>
-            </div>
-          )}
         </form>
       </div>
     </div>

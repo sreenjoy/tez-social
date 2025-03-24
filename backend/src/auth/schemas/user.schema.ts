@@ -19,9 +19,6 @@ export class User extends Document {
   role: string;
 
   @Prop()
-  googleId?: string;
-
-  @Prop()
   picture?: string;
 
   // Method to safely return user details without sensitive info

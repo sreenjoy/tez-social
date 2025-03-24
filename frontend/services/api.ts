@@ -42,30 +42,6 @@ export const authApi = {
     return response.data;
   },
   
-  // Redirect to Google OAuth
-  googleAuth: () => {
-    // Get the frontend URL from environment or use default
-    const frontendUrl = typeof window !== 'undefined' 
-      ? `${window.location.protocol}//${window.location.host}`
-      : 'https://tez-social.vercel.app';
-    
-    // Create the callback URL for Google OAuth
-    const callbackUrl = `${frontendUrl}/auth/login`;
-    
-    // Log what we're doing
-    console.log("[API] Redirecting to Google OAuth with:");
-    console.log("[API] - Backend URL:", BACKEND_URL);
-    console.log("[API] - Callback URL:", callbackUrl);
-    
-    // Add the callback URL as a query parameter - important: no /api prefix for OAuth to work
-    const redirectUrl = `${BACKEND_URL}/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
-    
-    console.log("[API] Final redirect URL:", redirectUrl);
-    
-    // Full page redirect to the Google OAuth endpoint
-    window.location.href = redirectUrl;
-  },
-  
   // Logout the current user
   logout: async () => {
     const response = await axiosInstance.post('/api/auth/logout');
