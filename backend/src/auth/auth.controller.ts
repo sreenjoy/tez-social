@@ -44,7 +44,7 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   googleAuth() {
     // This will redirect to Google OAuth
-    this.logger.log('Redirecting to Google OAuth');
+    this.logger.log('Redirecting to Google OAuth with hardcoded callback URL');
   }
 
   @Get('google/callback')
