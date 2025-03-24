@@ -118,7 +118,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
     try {
       // Try to get the current user (this will use the token from localStorage via interceptor)
       const response = await userApi.getCurrentUser();
-      const user = response.data;
+      // Extract user data from the response data property
+      const user = response.data.data || response.data;
       
       set({ 
         user, 

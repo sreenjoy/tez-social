@@ -12,12 +12,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   useEffect(() => {
     // Check authentication on mount
+    console.log("ProtectedRoute: Checking authentication");
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
     // If not authenticated and not loading, redirect to login
+    console.log("ProtectedRoute: Auth state changed", { isAuthenticated, isLoading });
     if (!isLoading && !isAuthenticated) {
+      console.log("ProtectedRoute: Redirecting to login");
       router.push('/auth/login');
     }
   }, [isAuthenticated, isLoading, router]);
