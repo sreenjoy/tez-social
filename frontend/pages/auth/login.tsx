@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useAuthStore from '../../store/authStore';
 
+// Define the target redirect page after successful login
+const REDIRECT_AFTER_LOGIN = '/dashboard';
+
 export default function LoginPage() {
   const router = useRouter();
   const { token, googleUser, source, error: routerError } = router.query;
-  const { login, error: authError, isLoading, isAuthenticated, clearError, setAuthState } = useAuthStore();
+  const { login, error: authError, isLoading, isAuthenticated, clearError, setAuthState, checkAuth } = useAuthStore();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,14 +36,28 @@ export default function LoginPage() {
   useEffect(() => {
     if (!router.isReady) return;
     
+    console.log("Login page: Got query params:", { token, googleUser, source, routerError });
+    
     // Check if we have Google OAuth parameters
-    if (token && googleUser && source === 'google') {
+    if (token) {
       setGoogleAuthProcessing(true);
-      console.log("Login page: Detected Google OAuth redirect with token");
+      console.log("Login page: Detected OAuth token");
       
       try {
-        // Parse the user data
-        const userData = typeof googleUser === 'string' ? JSON.parse(decodeURIComponent(googleUser)) : googleUser;
+        // Parse the user data - handle both formats (with and without googleUser param)
+        let userData;
+        if (googleUser) {
+          userData = typeof googleUser === 'string' ? JSON.parse(decodeURIComponent(googleUser)) : googleUser;
+        } else {
+          // For format where no googleUser param is sent, try to extract from user's cookies or other means
+          // For now, create minimal user data
+          userData = {
+            email: 'user@example.com',  // This will be replaced by real data from API when calling checkAuth
+            firstName: 'Google User'
+          };
+        }
+        
+        console.log("Login page: User data processed", userData);
         
         // Store auth data
         localStorage.setItem('token', token.toString());
@@ -54,12 +71,25 @@ export default function LoginPage() {
           token: token.toString()
         });
         
-        console.log("Login page: Google OAuth data processed successfully");
-        
-        // Navigate to dashboard after short delay
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1000);
+        // Validate token with backend
+        checkAuth().then(isValid => {
+          console.log("Token validation result:", isValid);
+          
+          if (!isValid) {
+            throw new Error("Token validation failed");
+          }
+          
+          console.log("Login page: Google OAuth data processed successfully");
+          
+          // Navigate to dashboard after short delay
+          setTimeout(() => {
+            window.location.href = REDIRECT_AFTER_LOGIN;
+          }, 1000);
+        }).catch(err => {
+          console.error("Error validating token:", err);
+          setError("Authentication verification failed. Please try again.");
+          setGoogleAuthProcessing(false);
+        });
       } catch (e) {
         console.error("Login page: Failed to process Google OAuth data", e);
         setError('Failed to process Google authentication data. Please try again.');
@@ -71,7 +101,7 @@ export default function LoginPage() {
     if (routerError) {
       setError(typeof routerError === 'string' ? routerError : 'Authentication failed');
     }
-  }, [router.isReady, token, googleUser, source, routerError, setAuthState]);
+  }, [router.isReady, token, googleUser, source, routerError, setAuthState, checkAuth]);
 
   useEffect(() => {
     // If already authenticated, redirect to dashboard with a slight delay
@@ -83,7 +113,7 @@ export default function LoginPage() {
       // Set a short delay before redirecting to ensure logs are captured
       setTimeout(() => {
         // Use window.location for a hard redirect to avoid any router caching issues
-        window.location.href = '/dashboard';
+        window.location.href = REDIRECT_AFTER_LOGIN;
       }, 500);
     }
     
@@ -92,7 +122,7 @@ export default function LoginPage() {
       setError(authError);
       clearError();
     }
-  }, [isAuthenticated, authError, router, clearError, googleAuthProcessing]);
+  }, [isAuthenticated, authError, clearError, googleAuthProcessing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +136,7 @@ export default function LoginPage() {
       // Delay redirect to ensure logs are captured
       setTimeout(() => {
         // Directly redirect after successful login instead of waiting for the effect
-        window.location.href = '/dashboard';
+        window.location.href = REDIRECT_AFTER_LOGIN;
       }, 500);
       
     } catch (err: any) {

@@ -66,21 +66,21 @@ export class AuthController {
       
       if (!access_token || !user) {
         this.logger.error('Missing user data or access token in Google callback');
-        return res.redirect(`${this.frontendUrl}/auth/callback?error=authentication_failed&reason=missing_data`);
+        return res.redirect(`${this.frontendUrl}/auth/login?error=authentication_failed&reason=missing_data`);
       }
       
-      // Always use a fixed production redirect URL
-      const callbackUrl = `${this.frontendUrl}/auth/callback`;
+      // Always redirect to the login page which can handle the token
+      const loginUrl = `${this.frontendUrl}/auth/login`;
       
       // Add token and user data to the redirect URL
-      const finalRedirectUrl = `${callbackUrl}?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
+      const finalRedirectUrl = `${loginUrl}?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
       
       this.logger.log(`Redirecting to: ${finalRedirectUrl}`);
       return res.redirect(finalRedirectUrl);
     } catch (error) {
       this.logger.error(`Error in Google callback: ${error.message}`);
       this.logger.error(error.stack);
-      return res.redirect(`${this.frontendUrl}/auth/callback?error=authentication_failed&reason=server_error`);
+      return res.redirect(`${this.frontendUrl}/auth/login?error=authentication_failed&reason=server_error`);
     }
   }
   

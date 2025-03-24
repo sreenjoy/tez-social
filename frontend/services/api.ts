@@ -72,8 +72,8 @@ export const authApi = {
       ? `${window.location.protocol}//${window.location.host}`
       : '';
     
-    // Create the callback URL
-    const callbackUrl = `${frontendUrl}/auth/callback`;
+    // Create the callback URL - using login page instead of a separate callback page
+    const callbackUrl = `${frontendUrl}/auth/login`;
     
     console.log("Redirecting to Google Auth...");
     console.log("Backend URL for Google Auth:", `${BACKEND_URL}/api/auth/google`);
