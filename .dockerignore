@@ -1,0 +1,31 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Frontend directory (since we're only deploying the backend)
+frontend/
+
+# Environment variables
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Development files
+*.md
+!README.md
+.vscode/
+
+# Build files
+dist/
+coverage/
+
+# Logs
+logs
+*.log
+
+# Temp files
+.DS_Store
+Thumbs.db 
