@@ -62,18 +62,18 @@ export class AuthController {
       
       if (!access_token || !user) {
         this.logger.error('Missing user data or access token in Google callback');
-        return res.redirect(`${this.frontendUrl}/auth/login?error=authentication_failed&reason=missing_data`);
+        return res.redirect(`https://tez-social-frontend.vercel.app/auth/login?error=authentication_failed&reason=missing_data`);
       }
       
-      // Create a token URL parameter - production-ready approach
-      const redirectUrl = `${this.frontendUrl}/auth/login?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
+      // Use absolute URL to prevent path concatenation issues
+      const redirectUrl = `https://tez-social-frontend.vercel.app/auth/login?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
       
       this.logger.log(`Redirecting to frontend URL: ${redirectUrl}`);
       return res.redirect(redirectUrl);
     } catch (error) {
       this.logger.error(`Error in Google callback: ${error.message}`);
       this.logger.error(error.stack);
-      return res.redirect(`${this.frontendUrl}/auth/login?error=authentication_failed&reason=server_error`);
+      return res.redirect(`https://tez-social-frontend.vercel.app/auth/login?error=authentication_failed&reason=server_error`);
     }
   }
 } 
