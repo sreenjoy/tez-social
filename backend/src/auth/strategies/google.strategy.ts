@@ -29,7 +29,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       scope: ['email', 'profile'],
     });
     
-    this.logger.log(`Initialized Google Strategy with callback URL: ${callbackURL}`);
+    this.logger.log(`Initializing Google Strategy with callback URL: ${callbackURL}`);
   }
 
   async validate(
