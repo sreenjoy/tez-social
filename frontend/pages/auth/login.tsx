@@ -11,14 +11,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<any[]>([]);
+
+  // Load debug logs from localStorage
+  useEffect(() => {
+    if (showDebug) {
+      try {
+        const logs = JSON.parse(localStorage.getItem('auth_debug_logs') || '[]');
+        setDebugLogs(logs);
+      } catch (e) {
+        console.error('Failed to parse debug logs', e);
+        setDebugLogs([]);
+      }
+    }
+  }, [showDebug]);
 
   useEffect(() => {
-    // If already authenticated, redirect to dashboard
+    // If already authenticated, redirect to dashboard with a slight delay
+    // to allow logs to be captured
     console.log("Login page: Auth state check", { isAuthenticated, authError });
     if (isAuthenticated) {
       console.log("Login page: Redirecting to dashboard");
-      // Use window.location for a hard redirect to avoid any router caching issues
-      window.location.href = '/dashboard';
+      
+      // Set a short delay before redirecting to ensure logs are captured
+      setTimeout(() => {
+        // Use window.location for a hard redirect to avoid any router caching issues
+        window.location.href = '/dashboard';
+      }, 500);
     }
     
     // Show auth store errors
@@ -36,12 +56,25 @@ export default function LoginPage() {
       console.log("Login page: Attempting login", { email });
       await login(email, password);
       console.log("Login page: Login successful");
-      // Directly redirect after successful login instead of waiting for the effect
-      window.location.href = '/dashboard';
+      
+      // Delay redirect to ensure logs are captured
+      setTimeout(() => {
+        // Directly redirect after successful login instead of waiting for the effect
+        window.location.href = '/dashboard';
+      }, 500);
+      
     } catch (err: any) {
       console.error("Login page: Login failed", err);
       setError(err.message || 'Failed to login. Please check your credentials.');
     }
+  };
+
+  // Function to clear all auth data for testing
+  const handleClearAuth = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isLoggedIn');
+    alert('Auth data cleared. Refresh the page to see changes.');
   };
 
   return (
@@ -126,6 +159,46 @@ export default function LoginPage() {
             </div>
           </div>
         </form>
+        
+        {/* Debug section */}
+        <div className="mt-8">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              {showDebug ? 'Hide debug info' : 'Show debug info'}
+            </button>
+            
+            {showDebug && (
+              <button
+                onClick={handleClearAuth}
+                className="text-sm text-red-500 hover:text-red-700"
+              >
+                Clear auth data
+              </button>
+            )}
+          </div>
+          
+          {showDebug && (
+            <div className="mt-4 p-4 bg-gray-100 rounded text-xs overflow-auto max-h-60">
+              <h3 className="font-bold mb-2">Auth Debug Logs:</h3>
+              {debugLogs.length === 0 ? (
+                <p>No logs available</p>
+              ) : (
+                <ul>
+                  {debugLogs.map((log, i) => (
+                    <li key={i} className="mb-2 border-b border-gray-300 pb-1">
+                      <div><span className="font-bold">Time:</span> {log.timestamp}</div>
+                      <div><span className="font-bold">Action:</span> {log.action}</div>
+                      <div><span className="font-bold">Data:</span> {JSON.stringify(log.data)}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

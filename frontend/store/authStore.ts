@@ -7,6 +7,7 @@ interface User {
   lastName?: string;
   email: string;
   createdAt?: string;
+  role?: string;
 }
 
 interface AuthState {
@@ -23,24 +24,72 @@ interface AuthState {
   clearError: () => void;
 }
 
+const safeParseJSON = (str: string | null): any => {
+  if (!str) return null;
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    console.error('Error parsing JSON from localStorage', e);
+    return null;
+  }
+};
+
+// Helper function to log debug information to localStorage
+const logToStorage = (action: string, data: any) => {
+  try {
+    const logs = safeParseJSON(localStorage.getItem('auth_debug_logs')) || [];
+    logs.push({
+      timestamp: new Date().toISOString(),
+      action,
+      data
+    });
+    // Keep only last 20 logs
+    if (logs.length > 20) logs.shift();
+    localStorage.setItem('auth_debug_logs', JSON.stringify(logs));
+  } catch (e) {
+    console.error('Failed to log to storage', e);
+  }
+};
+
 const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
+  user: typeof window !== 'undefined' ? safeParseJSON(localStorage.getItem('user')) : null,
+  isAuthenticated: typeof window !== 'undefined' ? localStorage.getItem('isLoggedIn') === 'true' : false,
   isLoading: false,
   error: null,
   
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
+    logToStorage('login_attempt', { email });
     
     try {
       const response = await authApi.login({ email, password });
+      console.log('Login response:', response.data);
+      logToStorage('login_response', response.data);
+      
       // Extract token and user data from the response
-      const { access_token: token, user } = response.data.data;
+      const responseData = response.data.data || response.data;
+      const access_token = responseData.access_token || responseData.token;
+      const user = responseData.user || responseData;
+      
+      if (!access_token) {
+        const error = 'Invalid response: No token found';
+        logToStorage('login_error', { error, response: responseData });
+        throw new Error(error);
+      }
+      
+      if (!user || typeof user !== 'object') {
+        const error = 'Invalid response: User data missing or invalid';
+        logToStorage('login_error', { error, response: responseData });
+        throw new Error(error);
+      }
       
       // Store token and user data
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isLoggedIn', 'true');
+      
+      console.log('Auth state updated:', { user, isAuthenticated: true });
+      logToStorage('login_success', { user });
       
       set({ 
         user, 
@@ -49,7 +98,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
       });
       
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to login. Please try again.';
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to login. Please try again.';
+      logToStorage('login_error', { message: errorMessage, error });
+      
       set({ 
         error: errorMessage, 
         isLoading: false 
@@ -63,13 +115,21 @@ const useAuthStore = create<AuthState>((set, get) => ({
     
     try {
       const response = await authApi.register({ name, email, password });
+      console.log('Register response:', response.data);
+      
       // Extract token and user data from the response
-      const { access_token: token, user } = response.data.data;
+      const { access_token, user } = response.data.data || {};
+      
+      if (!access_token || !user) {
+        throw new Error('Invalid response format from server');
+      }
       
       // Store token and user data
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isLoggedIn', 'true');
+      
+      console.log('Auth state updated after registration:', { user, isAuthenticated: true });
       
       set({ 
         user, 
@@ -78,6 +138,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       });
       
     } catch (error: any) {
+      console.error('Registration error:', error);
       const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
       set({ 
         error: errorMessage, 
@@ -107,19 +168,44 @@ const useAuthStore = create<AuthState>((set, get) => ({
   
   checkAuth: async () => {
     set({ isLoading: true });
+    console.log('Checking auth...');
     
     // First check if we have a token in localStorage
     const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    console.log('Local storage:', { token: !!token, user: !!storedUser });
+    logToStorage('check_auth', { hasToken: !!token, hasUser: !!storedUser });
+    
     if (!token) {
-      set({ isLoading: false });
+      console.log('No token found, not authenticated');
+      logToStorage('check_auth_no_token', {});
+      set({ isLoading: false, isAuthenticated: false });
       return;
     }
     
     try {
       // Try to get the current user (this will use the token from localStorage via interceptor)
       const response = await userApi.getCurrentUser();
+      console.log('getCurrentUser response:', response.data);
+      logToStorage('get_current_user_response', response.data);
+      
       // Extract user data from the response data property
-      const user = response.data.data || response.data;
+      const responseData = response.data.data || response.data;
+      const user = responseData.user || responseData;
+      
+      if (!user || typeof user !== 'object') {
+        const error = 'Invalid user data';
+        logToStorage('check_auth_invalid_user', { responseData });
+        throw new Error(error);
+      }
+      
+      console.log('User authenticated:', user);
+      logToStorage('check_auth_success', { user });
+      
+      // Make sure localStorage is updated with latest user data
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('isLoggedIn', 'true');
       
       set({ 
         user, 
@@ -127,7 +213,13 @@ const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false 
       });
       
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error checking auth:', error);
+      logToStorage('check_auth_error', { 
+        message: error.message,
+        response: error.response?.data 
+      });
+      
       // If there's an error (invalid token, etc.), clear auth state
       localStorage.removeItem('token');
       localStorage.removeItem('user');
