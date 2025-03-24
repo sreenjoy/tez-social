@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
+import useAuthStore from '../../store/authStore';
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { register, error: authError, isLoading, isAuthenticated, clearError } = useAuthStore();
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // If already authenticated, redirect to dashboard
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+    
+    // Show auth store errors
+    if (authError) {
+      setError(authError);
+      clearError();
+    }
+  }, [isAuthenticated, authError, router, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,20 +47,12 @@ export default function RegisterPage() {
       return;
     }
     
-    setIsLoading(true);
-    
     try {
-      // Mock successful registration
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('user', JSON.stringify({ name, email }));
-      
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
-    } catch (err) {
-      setError('Registration failed. Please try again.');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      await register(name, email, password);
+      // Successful registration will update isAuthenticated in the store,
+      // which will trigger the useEffect to redirect
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
     }
   };
 
@@ -136,10 +145,25 @@ export default function RegisterPage() {
             </button>
           </div>
           
-          <div className="text-sm text-center">
-            <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Already have an account? Sign in
-            </Link>
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Already have an account? Sign in
+              </Link>
+            </div>
+            
+            <div className="text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  // You can implement Google auth here using the authApi
+                  window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+                }}
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Sign up with Google
+              </button>
+            </div>
           </div>
         </form>
       </div>
