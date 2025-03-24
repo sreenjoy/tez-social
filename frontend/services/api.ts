@@ -1,8 +1,7 @@
-import axios, { AxiosRequestConfig } from 'axios';
-import getConfig from 'next/config';
+import axios from 'axios';
 
 // Get the backend URL from environment variables
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://tez-social-production.up.railway.app';
 
 // Create a custom axios instance for our API
 const axiosInstance = axios.create({
@@ -22,31 +21,9 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
-    
-    // Log request for debugging
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, { 
-      baseURL: config.baseURL,
-      headers: config.headers 
-    });
-    
     return config;
   },
   (error) => {
-    console.error('[API Request Error]', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add a response interceptor for logging
-axiosInstance.interceptors.response.use(
-  (response) => {
-    console.log(`[API Response] ${response.status} ${response.config.url}`, { 
-      data: response.data
-    });
-    return response;
-  },
-  (error) => {
-    console.error('[API Response Error]', error.response || error);
     return Promise.reject(error);
   }
 );
@@ -55,13 +32,13 @@ axiosInstance.interceptors.response.use(
 export const authApi = {
   // Register a new user
   register: async (userData: any) => {
-    const response = await axiosInstance.post('/auth/register', userData);
+    const response = await axiosInstance.post('/api/auth/register', userData);
     return response.data;
   },
   
   // Login with email and password
   login: async (email: string, password: string) => {
-    const response = await axiosInstance.post('/auth/login', { email, password });
+    const response = await axiosInstance.post('/api/auth/login', { email, password });
     return response.data;
   },
   
@@ -70,31 +47,27 @@ export const authApi = {
     // Get the frontend URL from environment or use default
     const frontendUrl = typeof window !== 'undefined' 
       ? `${window.location.protocol}//${window.location.host}`
-      : '';
+      : 'https://tez-social.vercel.app';
     
-    // Create the callback URL - using login page instead of a separate callback page
+    // Create the callback URL for Google OAuth
     const callbackUrl = `${frontendUrl}/auth/login`;
     
-    console.log("Redirecting to Google Auth...");
-    console.log("Backend URL for Google Auth:", `${BACKEND_URL}/api/auth/google`);
-    console.log("Callback URL:", callbackUrl);
-    
-    // Add the callback URL as a query parameter - using path with /api prefix
+    // Add the callback URL as a query parameter using path with /api prefix
     const redirectUrl = `${BACKEND_URL}/api/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
     
-    // This is a full page redirect to the Google OAuth endpoint
+    // Full page redirect to the Google OAuth endpoint
     window.location.href = redirectUrl;
   },
   
   // Logout the current user
   logout: async () => {
-    const response = await axiosInstance.post('/auth/logout');
+    const response = await axiosInstance.post('/api/auth/logout');
     return response.data;
   },
   
   // Get the current authenticated user
   getCurrentUser: async () => {
-    const response = await axiosInstance.get('/auth/me');
+    const response = await axiosInstance.get('/api/auth/me');
     return response.data;
   },
 };
@@ -103,13 +76,13 @@ export const authApi = {
 export const userApi = {
   // Get user profile
   getProfile: async (userId: string) => {
-    const response = await axiosInstance.get(`/users/${userId}`);
+    const response = await axiosInstance.get(`/api/users/${userId}`);
     return response.data;
   },
   
   // Update user profile
   updateProfile: async (userId: string, profileData: any) => {
-    const response = await axiosInstance.patch(`/users/${userId}`, profileData);
+    const response = await axiosInstance.patch(`/api/users/${userId}`, profileData);
     return response.data;
   },
   

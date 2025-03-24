@@ -15,49 +15,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [showDebug, setShowDebug] = useState(false);
-  const [debugLogs, setDebugLogs] = useState<any[]>([]);
   const [googleAuthProcessing, setGoogleAuthProcessing] = useState(false);
-
-  // Load debug logs from localStorage
-  useEffect(() => {
-    if (showDebug) {
-      try {
-        const logs = JSON.parse(localStorage.getItem('auth_debug_logs') || '[]');
-        setDebugLogs(logs);
-      } catch (e) {
-        console.error('Failed to parse debug logs', e);
-        setDebugLogs([]);
-      }
-    }
-  }, [showDebug]);
 
   // Handle Google OAuth redirect
   useEffect(() => {
     if (!router.isReady) return;
     
-    console.log("Login page: Got query params:", { token, googleUser, source, routerError });
-    
     // Check if we have Google OAuth parameters
     if (token) {
       setGoogleAuthProcessing(true);
-      console.log("Login page: Detected OAuth token");
       
       try {
-        // Parse the user data - handle both formats (with and without googleUser param)
+        // Parse the user data
         let userData;
         if (googleUser) {
           userData = typeof googleUser === 'string' ? JSON.parse(decodeURIComponent(googleUser)) : googleUser;
         } else {
-          // For format where no googleUser param is sent, try to extract from user's cookies or other means
-          // For now, create minimal user data
-          userData = {
-            email: 'user@example.com',  // This will be replaced by real data from API when calling checkAuth
-            firstName: 'Google User'
-          };
+          // Minimal user data as fallback
+          userData = { email: '', firstName: '' };
         }
-        
-        console.log("Login page: User data processed", userData);
         
         // Store auth data
         localStorage.setItem('token', token.toString());
@@ -73,25 +49,17 @@ export default function LoginPage() {
         
         // Validate token with backend
         checkAuth().then(isValid => {
-          console.log("Token validation result:", isValid);
-          
           if (!isValid) {
             throw new Error("Token validation failed");
           }
           
-          console.log("Login page: Google OAuth data processed successfully");
-          
-          // Navigate to dashboard after short delay
-          setTimeout(() => {
-            window.location.href = REDIRECT_AFTER_LOGIN;
-          }, 1000);
+          // Navigate to dashboard
+          window.location.href = REDIRECT_AFTER_LOGIN;
         }).catch(err => {
-          console.error("Error validating token:", err);
           setError("Authentication verification failed. Please try again.");
           setGoogleAuthProcessing(false);
         });
       } catch (e) {
-        console.error("Login page: Failed to process Google OAuth data", e);
         setError('Failed to process Google authentication data. Please try again.');
         setGoogleAuthProcessing(false);
       }
@@ -104,17 +72,9 @@ export default function LoginPage() {
   }, [router.isReady, token, googleUser, source, routerError, setAuthState, checkAuth]);
 
   useEffect(() => {
-    // If already authenticated, redirect to dashboard with a slight delay
-    // to allow logs to be captured
-    console.log("Login page: Auth state check", { isAuthenticated, authError });
+    // If already authenticated, redirect to dashboard
     if (isAuthenticated && !googleAuthProcessing) {
-      console.log("Login page: Redirecting to dashboard");
-      
-      // Set a short delay before redirecting to ensure logs are captured
-      setTimeout(() => {
-        // Use window.location for a hard redirect to avoid any router caching issues
-        window.location.href = REDIRECT_AFTER_LOGIN;
-      }, 500);
+      window.location.href = REDIRECT_AFTER_LOGIN;
     }
     
     // Show auth store errors
@@ -129,28 +89,11 @@ export default function LoginPage() {
     setError('');
     
     try {
-      console.log("Login page: Attempting login", { email });
       await login(email, password);
-      console.log("Login page: Login successful");
-      
-      // Delay redirect to ensure logs are captured
-      setTimeout(() => {
-        // Directly redirect after successful login instead of waiting for the effect
-        window.location.href = REDIRECT_AFTER_LOGIN;
-      }, 500);
-      
+      window.location.href = REDIRECT_AFTER_LOGIN;
     } catch (err: any) {
-      console.error("Login page: Login failed", err);
       setError(err.message || 'Failed to login. Please check your credentials.');
     }
-  };
-
-  // Function to clear all auth data for testing
-  const handleClearAuth = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isLoggedIn');
-    alert('Auth data cleared. Refresh the page to see changes.');
   };
 
   // Show a processing screen if we're handling Google auth
@@ -158,12 +101,12 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <Head>
-          <title>Processing Google Sign-In | Tez Social</title>
+          <title>Processing Sign-In | Tez Social</title>
         </Head>
         
         <div className="max-w-md w-full space-y-8 text-center">
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Processing Google Sign-In
+            Processing Sign-In
           </h2>
           <p className="mt-2 text-gray-600">
             Please wait while we complete your authentication...
@@ -248,7 +191,6 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  // Use the authApi.googleAuth() method from our API service
                   import('../../services/api').then(({ authApi }) => {
                     authApi.googleAuth();
                   });
@@ -260,46 +202,6 @@ export default function LoginPage() {
             </div>
           </div>
         </form>
-        
-        {/* Debug section */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              {showDebug ? 'Hide debug info' : 'Show debug info'}
-            </button>
-            
-            {showDebug && (
-              <button
-                onClick={handleClearAuth}
-                className="text-sm text-red-500 hover:text-red-700"
-              >
-                Clear auth data
-              </button>
-            )}
-          </div>
-          
-          {showDebug && (
-            <div className="mt-4 p-4 bg-gray-100 rounded text-xs overflow-auto max-h-60">
-              <h3 className="font-bold mb-2">Auth Debug Logs:</h3>
-              {debugLogs.length === 0 ? (
-                <p>No logs available</p>
-              ) : (
-                <ul>
-                  {debugLogs.map((log, i) => (
-                    <li key={i} className="mb-2 border-b border-gray-300 pb-1">
-                      <div><span className="font-bold">Time:</span> {log.timestamp}</div>
-                      <div><span className="font-bold">Action:</span> {log.action}</div>
-                      <div><span className="font-bold">Data:</span> {JSON.stringify(log.data)}</div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
