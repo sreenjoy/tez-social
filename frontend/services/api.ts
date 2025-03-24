@@ -52,8 +52,15 @@ export const authApi = {
     // Create the callback URL for Google OAuth
     const callbackUrl = `${frontendUrl}/auth/login`;
     
-    // Add the callback URL as a query parameter using path with /api prefix
-    const redirectUrl = `${BACKEND_URL}/api/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
+    // Log what we're doing
+    console.log("[API] Redirecting to Google OAuth with:");
+    console.log("[API] - Backend URL:", BACKEND_URL);
+    console.log("[API] - Callback URL:", callbackUrl);
+    
+    // Add the callback URL as a query parameter - important: no /api prefix for OAuth to work
+    const redirectUrl = `${BACKEND_URL}/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
+    
+    console.log("[API] Final redirect URL:", redirectUrl);
     
     // Full page redirect to the Google OAuth endpoint
     window.location.href = redirectUrl;
@@ -88,13 +95,13 @@ export const userApi = {
   
   // Get followers
   getFollowers: async (userId: string) => {
-    const response = await axiosInstance.get(`/users/${userId}/followers`);
+    const response = await axiosInstance.get(`/api/users/${userId}/followers`);
     return response.data;
   },
   
   // Get following
   getFollowing: async (userId: string) => {
-    const response = await axiosInstance.get(`/users/${userId}/following`);
+    const response = await axiosInstance.get(`/api/users/${userId}/following`);
     return response.data;
   },
 };
@@ -103,49 +110,49 @@ export const userApi = {
 export const postApi = {
   // Get feed posts
   getFeed: async (page = 1, limit = 10) => {
-    const response = await axiosInstance.get(`/posts/feed?page=${page}&limit=${limit}`);
+    const response = await axiosInstance.get(`/api/posts/feed?page=${page}&limit=${limit}`);
     return response.data;
   },
   
   // Create a new post
   createPost: async (postData: any) => {
-    const response = await axiosInstance.post('/posts', postData);
+    const response = await axiosInstance.post('/api/posts', postData);
     return response.data;
   },
   
   // Get a single post
   getPost: async (postId: string) => {
-    const response = await axiosInstance.get(`/posts/${postId}`);
+    const response = await axiosInstance.get(`/api/posts/${postId}`);
     return response.data;
   },
   
   // Delete a post
   deletePost: async (postId: string) => {
-    const response = await axiosInstance.delete(`/posts/${postId}`);
+    const response = await axiosInstance.delete(`/api/posts/${postId}`);
     return response.data;
   },
   
   // Like a post
   likePost: async (postId: string) => {
-    const response = await axiosInstance.post(`/posts/${postId}/like`);
+    const response = await axiosInstance.post(`/api/posts/${postId}/like`);
     return response.data;
   },
   
   // Unlike a post
   unlikePost: async (postId: string) => {
-    const response = await axiosInstance.delete(`/posts/${postId}/like`);
+    const response = await axiosInstance.delete(`/api/posts/${postId}/like`);
     return response.data;
   },
   
   // Get post comments
   getComments: async (postId: string, page = 1, limit = 10) => {
-    const response = await axiosInstance.get(`/posts/${postId}/comments?page=${page}&limit=${limit}`);
+    const response = await axiosInstance.get(`/api/posts/${postId}/comments?page=${page}&limit=${limit}`);
     return response.data;
   },
   
   // Add a comment to a post
   addComment: async (postId: string, content: string) => {
-    const response = await axiosInstance.post(`/posts/${postId}/comments`, { content });
+    const response = await axiosInstance.post(`/api/posts/${postId}/comments`, { content });
     return response.data;
   },
 };
