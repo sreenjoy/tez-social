@@ -14,6 +14,7 @@ export class AuthController {
     private configService: ConfigService,
   ) {
     this.frontendUrl = this.configService.get('FRONTEND_URL') || '';
+    this.logger.log(`AuthController initialized with frontend URL: ${this.frontendUrl}`);
   }
 
   @Post('register')
@@ -24,7 +25,7 @@ export class AuthController {
       message: 'Success',
       data: await this.authService.register(registerDto),
       timestamp: new Date().toISOString(),
-      path: '/auth/register',
+      path: '/api/auth/register',
     };
   }
 
@@ -36,14 +37,14 @@ export class AuthController {
       message: 'Success',
       data: await this.authService.login(loginDto.email, loginDto.password),
       timestamp: new Date().toISOString(),
-      path: '/auth/login',
+      path: '/api/auth/login',
     };
   }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {
-    this.logger.log('Redirecting to Google OAuth');
+    this.logger.log('Google OAuth route accessed - redirecting to Google login');
     // This will redirect to Google OAuth
   }
 
@@ -53,22 +54,24 @@ export class AuthController {
     this.logger.log('Google OAuth callback received');
     
     try {
+      this.logger.log(`Google OAuth callback data: ${JSON.stringify(req.user || {})}`);
       const { access_token, user } = req.user || {};
       
       if (!access_token || !user) {
-        this.logger.error('Missing user data or access token');
-        return res.redirect(`${this.frontendUrl}/login?error=authentication_failed`);
+        this.logger.error('Missing user data or access token in Google callback');
+        return res.redirect(`${this.frontendUrl}/login?error=authentication_failed&reason=missing_data`);
       }
       
       // Create a URL with the token as a parameter
       const redirectUrl = `${this.frontendUrl}/auth/google/success?token=${access_token}&user=${encodeURIComponent(JSON.stringify(user))}`;
       
       // Redirect to frontend with token
-      this.logger.log(`Redirecting to frontend: ${redirectUrl}`);
+      this.logger.log(`Redirecting to frontend URL: ${redirectUrl}`);
       return res.redirect(redirectUrl);
     } catch (error) {
       this.logger.error(`Error in Google callback: ${error.message}`);
-      return res.redirect(`${this.frontendUrl}/login?error=authentication_failed`);
+      this.logger.error(error.stack);
+      return res.redirect(`${this.frontendUrl}/login?error=authentication_failed&reason=server_error`);
     }
   }
 } 
