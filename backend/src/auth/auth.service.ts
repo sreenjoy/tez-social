@@ -15,7 +15,7 @@ export class AuthService {
   ) {}
 
   async register(userData: any) {
-    const { email, password, firstName, lastName } = userData;
+    const { email, password, username } = userData;
 
     // Check if user already exists
     const existingUser = await this.userModel.findOne({ email });
@@ -30,8 +30,7 @@ export class AuthService {
     const newUser = new this.userModel({
       email,
       password: hashedPassword,
-      firstName,
-      lastName,
+      username,
     });
 
     await newUser.save();
@@ -67,8 +66,7 @@ export class AuthService {
       user: {
         id: user._id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        username: user.username,
         role: user.role,
         picture: user.picture,
       },

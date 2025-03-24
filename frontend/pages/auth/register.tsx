@@ -8,7 +8,7 @@ const RegisterPage = () => {
   const router = useRouter();
   const { register, isAuthenticated, error: authError, clearError } = useAuthStore();
   
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,10 +16,7 @@ const RegisterPage = () => {
 
   useEffect(() => {
     // If already authenticated, redirect to dashboard
-    console.log("Register page: Auth state check", { isAuthenticated, authError });
     if (isAuthenticated) {
-      console.log("Register page: Redirecting to dashboard");
-      // Use window.location for a hard redirect
       window.location.href = '/dashboard';
     }
     
@@ -35,7 +32,7 @@ const RegisterPage = () => {
     setFormError('');
 
     // Form validation
-    if (!name || !email || !password || !confirmPassword) {
+    if (!username || !email || !password || !confirmPassword) {
       setFormError('All fields are required');
       return;
     }
@@ -51,13 +48,14 @@ const RegisterPage = () => {
     }
 
     try {
-      console.log("Register page: Attempting registration", { name, email });
-      await register(name, email, password);
-      console.log("Register page: Registration successful");
+      await register({
+        username,
+        email,
+        password
+      });
       // Directly redirect after successful registration
       window.location.href = '/dashboard';
     } catch (err: any) {
-      console.error("Register page: Registration failed", err);
       setFormError(err.message || 'Registration failed. Please try again.');
     }
   };
@@ -79,16 +77,16 @@ const RegisterPage = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-              Full Name
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
+              Username
             </label>
             <input
-              id="name"
+              id="username"
               type="text"
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="johndoe"
             />
           </div>
           

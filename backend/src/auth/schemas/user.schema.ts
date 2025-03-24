@@ -10,10 +10,7 @@ export class User extends Document {
   password?: string;
 
   @Prop({ required: true })
-  firstName: string;
-
-  @Prop()
-  lastName?: string;
+  username: string;
 
   @Prop({ default: 'user' })
   role: string;
