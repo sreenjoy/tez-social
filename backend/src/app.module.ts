@@ -18,8 +18,6 @@ import { AppService } from './app.service';
         }
         return {
           uri,
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
         };
       },
     }),

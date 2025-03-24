@@ -16,7 +16,7 @@ export class AppController {
     return { status: 'ok' };
   }
 
-  @Get('api/protected')
+  @Get('protected')
   @UseGuards(AuthGuard('jwt'))
   getProtected(@Req() req) {
     return {
