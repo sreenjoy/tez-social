@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Pipeline } from './pipeline.schema';
+import { User } from './user.schema';
 
 export type StageDocument = Stage & Document;
 
@@ -12,8 +13,14 @@ export class Stage {
   @Prop()
   description?: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Pipeline', required: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Pipeline' })
   pipeline: Pipeline;
+
+  @Prop({ type: String, required: true })
+  pipelineId: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  createdBy: User;
 
   @Prop({ default: true })
   isActive: boolean;

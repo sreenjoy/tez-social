@@ -1,149 +1,117 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Tez Social
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Tez Social is a CRM system with Telegram integration, helping users manage their Telegram contacts and conversations efficiently.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Project Overview
 
-# Tez.social Backend
+This project consists of two main parts:
+1. A NestJS backend API
+2. A Next.js frontend application
 
-Privacy-focused Telegram CRM backend service built with NestJS.
+## Key Features
 
-## Deployment Instructions
+- Telegram integration using Telegram's official API
+- User authentication and authorization
+- Contact management
+- Conversation tracking
+- Dashboard with analytics
+- Responsive UI
 
-### Railway Manual Deployment (Recommended)
+## Repository Structure
 
-If you're experiencing issues with CLI deployment, follow these steps for manual deployment via the Railway web console:
+```
+tez-social/
+├── backend/         # NestJS backend API
+├── frontend/        # Next.js frontend application
+├── docs/            # Documentation
+├── README.md        # Main README file
+└── .gitignore       # Git ignore file
+```
 
-1. Push your code to a GitHub repository
-2. Go to [Railway Dashboard](https://railway.app/dashboard)
-3. Click "New Project" and select "Deploy from GitHub repo"
-4. Connect your GitHub account if not already connected
-5. Select the repository containing this backend code
-6. Configure the following environment variables:
-   - `PORT`: 3001
-   - `MONGODB_URI`: mongodb+srv://sreenjoymallick14:<password>@tezsocial-cluster.hvvos.mongodb.net/?retryWrites=true&w=majority&appName=tezsocial-cluster
-   - `JWT_SECRET`: 06b80f59edf19fd301b7c23bf796389754194ff701accd87c12af179c5c27a89
-   - `JWT_EXPIRATION`: 24h
-   - `NODE_ENV`: production
-7. Deploy the project
+## Getting Started
 
-### Local Development
+### Prerequisites
 
-1. Install dependencies:
+- Node.js (v18 or higher)
+- npm or yarn
+- MongoDB
+- Telegram API credentials
+
+### Backend Setup
+
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
+
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Create a `.env` file with the required variables (see `.env.example`)
+3. Create a `.env` file with the following variables:
+```
+PORT=3001
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRATION=24h
+```
 
-3. Start the development server:
+4. Start the development server:
 ```bash
 npm run start:dev
 ```
 
-4. The API will be available at http://localhost:3001/api
+The API will be available at http://localhost:3001/api.
 
-## API Endpoints
+### Frontend Setup
 
-- `GET /api/health`: Health check endpoint
-- More endpoints to be added as development progresses
-
-## Tech Stack
-
-- NestJS
-- MongoDB with Mongoose
-- JWT Authentication
-- TypeScript
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
+1. Navigate to the frontend directory:
 ```bash
-$ npm install
+cd frontend
 ```
 
-## Compile and run the project
-
+2. Install dependencies:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+3. Create a `.env.local` file with the following variables:
 ```
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+The application will be available at http://localhost:3000.
+
+## API Documentation
+
+The API documentation is automatically generated using Swagger and is available at http://localhost:3001/api/docs when the backend is running.
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- The backend is deployed on Railway
+- The frontend is deployed on Vercel
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+For detailed deployment instructions, see:
+- [Backend Deployment Guide](/backend/DEPLOYMENT.md)
+- [Frontend Deployment Guide](/frontend/DEPLOYMENT.md)
 
-```bash
-$ npm install -g mau
-$ mau deploy
-```
+## Contributing
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Please read [CONTRIBUTING.md](/frontend/CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](/LICENSE) file for details.
+
+## Acknowledgments
+
+- [Telegram API](https://core.telegram.org/api)
+- [NestJS](https://nestjs.com/)
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)

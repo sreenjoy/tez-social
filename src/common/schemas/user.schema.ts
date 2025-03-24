@@ -3,6 +3,17 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
+// Telegram session interface
+export interface TelegramSession {
+  phoneNumber: string;
+  phoneCodeHash?: string;
+  connectedAt: Date;
+  verified: boolean;
+  verifiedAt?: Date;
+  is2FAEnabled?: boolean;
+  telegramId?: string;
+}
+
 @Schema({ timestamps: true })
 export class User {
   @Prop({ required: true, unique: true })
@@ -27,7 +38,7 @@ export class User {
   telegramId?: string;
 
   @Prop({ type: Object })
-  telegramSession?: Record<string, any>;
+  telegramSession?: TelegramSession;
 
   @Prop({ default: true })
   isActive: boolean;

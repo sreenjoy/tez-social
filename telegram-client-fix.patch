@@ -1,0 +1,24 @@
+diff --git a/src/telegram/telegram-client.service.ts b/src/telegram/telegram-client.service.ts
+index abcdef1234567890abcdef1234567890..fedcba0987654321fedcba0987654321 100644
+--- a/src/telegram/telegram-client.service.ts
++++ b/src/telegram/telegram-client.service.ts
+@@ -359,7 +359,7 @@ export class TelegramClientService implements OnModuleInit, OnModuleDestroy {
+           chatTitle = entity.title as string || '';
+         }
+         
+-        let lastMessageObj = null;
++        let lastMessageObj: any = null;
+         if (dialog.message) {
+           const message = dialog.message;
+           lastMessageObj = {
+@@ -424,7 +424,7 @@ export class TelegramClientService implements OnModuleInit, OnModuleDestroy {
+       
+       // Get full chat/channel/user info
+       let fullInfo: any = null;
+-      let members = null;
++      let members: any = null;
+       
+       if (isChannel) {
+         try {
+``` 
+</rewritten_file>

@@ -1,16 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter, AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
 
   // Enable CORS
-  const corsOrigin = configService.get<string>('app.corsOrigin') || '*';
   app.enableCors({
-    origin: corsOrigin,
+    origin: process.env.CORS_ORIGIN || '*',
     credentials: true,
   });
 
@@ -18,7 +17,20 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
+    forbidNonWhitelisted: true,
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
   }));
+
+  // Apply exception filters
+  app.useGlobalFilters(
+    new AllExceptionsFilter(),
+    new HttpExceptionFilter(),
+  );
+
+  // Apply response transformation
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   // Set global prefix
   app.setGlobalPrefix('api');
@@ -28,13 +40,13 @@ async function bootstrap() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
-  const port = configService.get<number>('app.port') || 3001;
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
   await app.listen(port);
   
   console.log('-----------------------------------');
-  console.log(`Environment: ${configService.get('app.nodeEnv') || 'development'}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Server running on port: ${port}`);
-  console.log(`API URL: ${configService.get('app.apiUrl') || `http://localhost:${port}`}`);
+  console.log(`API URL: ${process.env.API_URL || `http://localhost:${port}`}`);
   console.log('-----------------------------------');
 }
 bootstrap(); 

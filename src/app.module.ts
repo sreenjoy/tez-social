@@ -4,6 +4,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './auth/auth.module';
+import { PipelinesModule } from './pipelines/pipelines.module';
+import { TelegramModule } from './telegram/telegram.module';
 import { 
   databaseConfig, 
   jwtConfig, 
@@ -12,13 +15,20 @@ import {
   appConfig 
 } from './config/configuration';
 
+/**
+ * Main application module
+ * This is the entry point for the application
+ */
 @Module({
   imports: [
+    // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, jwtConfig, telegramConfig, googleConfig, appConfig],
       envFilePath: '.env',
     }),
+    
+    // Database connection
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -53,7 +63,12 @@ import {
         };
       },
     }),
+    
+    // Application modules
     DatabaseModule,
+    AuthModule,
+    PipelinesModule,
+    TelegramModule,
   ],
   controllers: [AppController],
   providers: [AppService],
