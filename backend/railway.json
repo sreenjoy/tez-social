@@ -10,6 +10,8 @@
     "startCommand": "npm run start:prod"
   },
   "environment": {
-    "GOOGLE_CALLBACK_URL": "https://tez-social-production.up.railway.app/api/auth/google/callback"
+    "JWT_SECRET": "tez-social-jwt-secret-key-for-development-only",
+    "FRONTEND_URL": "https://tez-social.vercel.app",
+    "MONGODB_URI": "${{ env.MONGODB_URI }}"
   }
 } 
