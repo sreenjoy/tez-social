@@ -1,28 +1,30 @@
 import { create } from 'zustand';
-import { authApi, userApi } from '../services/api';
+import { persist } from 'zustand/middleware';
+import { authApi } from '../services/api';
 
 interface User {
   id?: string;
+  email: string;
   firstName?: string;
   lastName?: string;
-  email: string;
-  createdAt?: string;
-  role?: string;
+  [key: string]: any;
 }
 
 interface AuthState {
-  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
+  token: string | null;
+  user: User | null;
   
   // Actions
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  checkAuth: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
   clearError: () => void;
-  setAuthState: (state: { isAuthenticated: boolean; user: any; token: string }) => void;
+  setAuthState: (state: Partial<AuthState>) => void;
+  addDebugLog: (action: string, data: any) => void;
 }
 
 const safeParseJSON = (str: string | null): any => {
@@ -52,299 +54,235 @@ const logToStorage = (action: string, data: any) => {
   }
 };
 
-const useAuthStore = create<AuthState>((set, get) => ({
-  user: typeof window !== 'undefined' ? safeParseJSON(localStorage.getItem('user')) : null,
-  isAuthenticated: typeof window !== 'undefined' ? localStorage.getItem('isLoggedIn') === 'true' : false,
-  isLoading: false,
-  error: null,
-  
-  login: async (email: string, password: string) => {
-    set({ isLoading: true, error: null });
-    logToStorage('login_attempt', { email });
-    
-    try {
-      const response = await authApi.login({ email, password });
-      console.log('Login response:', response.data);
-      logToStorage('login_response', response.data);
-      
-      // Extract token from the response based on the actual API response format
-      // For the Railway backend, the format is: { statusCode, message, data: { access_token, user } }
-      const token = response.data.data?.access_token || 
-                   (response.data.token) || 
-                   null;
-      
-      if (!token) {
-        throw new Error('No authentication token received from server');
-      }
-      
-      console.log('Token received:', !!token);
-      logToStorage('token_received', { token: !!token });
-      
-      // Extract user data from the response based on the actual API response format
-      let userData = response.data.data?.user ||
-                   (response.data.user) || 
-                   null;
-      
-      if (!userData) {
-        // Minimal user object for session if backend doesn't provide user details
-        userData = {
-          email,
-          firstName: email.split('@')[0]
-        };
-      }
-      
-      // Store token and user data
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('isLoggedIn', 'true');
-      
-      console.log('Auth state updated:', { user: userData, isAuthenticated: true });
-      logToStorage('login_success', { user: userData });
-      
-      set({ 
-        user: userData, 
-        isAuthenticated: true, 
-        isLoading: false 
-      });
-      
-    } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = 'Failed to login. Please try again.';
-      
-      // Extract error message from the response if possible
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      logToStorage('login_error', { message: errorMessage, error });
-      
-      // Make sure we're not authenticated if login fails
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('isLoggedIn');
-      
-      set({ 
-        error: errorMessage,
-        user: null,
-        isAuthenticated: false,
-        isLoading: false 
-      });
-      
-      throw new Error(errorMessage);
-    }
-  },
-  
-  register: async (name: string, email: string, password: string) => {
-    set({ isLoading: true, error: null });
-    logToStorage('register_attempt', { name, email });
-    
-    try {
-      const response = await authApi.register({ name, email, password });
-      console.log('Register response:', response.data);
-      logToStorage('register_response', response.data);
-      
-      // Extract token from the response based on the actual API response format
-      // For the Railway backend, the format is: { statusCode, message, data: { access_token, user } }
-      const token = response.data.data?.access_token || 
-                   (response.data.token) || 
-                   null;
-      
-      if (!token) {
-        throw new Error('No authentication token received from server');
-      }
-      
-      console.log('Token received:', !!token);
-      logToStorage('token_received', { token: !!token });
-      
-      // Extract user data from the response based on the actual API response format
-      let userData = response.data.data?.user ||
-                    (response.data.user) || 
-                    null;
-      
-      if (!userData) {
-        // Create minimal user data if not provided by the API
-        userData = {
-          email,
-          firstName: name
-        };
-      }
-      
-      // Store token and user data in localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('isLoggedIn', 'true');
-      
-      console.log('Auth state updated after registration:', { user: userData, isAuthenticated: true });
-      logToStorage('register_success', { user: userData });
-      
-      set({
-        user: userData,
-        isAuthenticated: true,
-        isLoading: false
-      });
-      
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      let errorMessage = 'Registration failed. Please try again.';
-      
-      // Extract error message from the response if possible
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      logToStorage('register_error', { message: errorMessage, error });
-      
-      set({ 
-        error: errorMessage, 
-        isLoading: false 
-      });
-      throw new Error(errorMessage);
-    }
-  },
-  
-  logout: () => {
-    // Clear localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isLoggedIn');
-    
-    // Reset state
-    set({ 
-      user: null, 
-      isAuthenticated: false 
-    });
-    
-    // Redirect to homepage
-    if (typeof window !== 'undefined') {
-      window.location.href = '/';
-    }
-  },
-  
-  checkAuth: async () => {
-    set({ isLoading: true });
-    
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    logToStorage('check_auth', { hasToken: !!token });
-    
-    if (!token) {
-      console.log('No token found, not authenticated');
-      logToStorage('check_auth_no_token', {});
-      set({ isLoading: false, isAuthenticated: false });
-      return;
-    }
-    
-    try {
-      // Try to get the current user from the API using the token
-      const response = await userApi.getCurrentUser();
-      console.log('getCurrentUser response:', response.data);
-      logToStorage('get_current_user_response', response.data);
-      
-      // If we get a successful response from the protected endpoint,
-      // it means our token is valid, but the endpoint doesn't return user data
-      if (response.data.statusCode === 200 && response.data.message === "This is a protected route") {
-        // Get the user data from localStorage since the API doesn't return it
-        const storedUser = safeParseJSON(localStorage.getItem('user'));
-        
-        if (storedUser && storedUser.email) {
-          console.log('Using stored user data since protected endpoint only confirms auth:', storedUser);
-          set({ 
-            user: storedUser, 
-            isAuthenticated: true, 
-            isLoading: false 
-          });
-          return;
-        }
-      }
-      
-      // For other endpoints that might return user data
-      const userData = response.data.user || 
-                      (response.data.data && response.data.data.user) || 
-                      response.data.data || 
-                      response.data;
-      
-      if (!userData || typeof userData !== 'object') {
-        // Fallback to stored user if API didn't return user data in expected format
-        const storedUser = safeParseJSON(localStorage.getItem('user'));
-        if (storedUser && storedUser.email) {
-          console.log('Using stored user data since API response format is unexpected:', storedUser);
-          set({ 
-            user: storedUser, 
-            isAuthenticated: true, 
-            isLoading: false 
-          });
-          return;
-        }
-        throw new Error('Invalid user data returned from server');
-      }
-      
-      // Ensure we have at least email in the user data
-      if (!userData.email && token) {
-        // Try to get stored user data as a fallback
-        const storedUser = safeParseJSON(localStorage.getItem('user'));
-        if (storedUser && storedUser.email) {
-          console.log('Using stored user data since API response lacks email:', storedUser);
-          
-          // Still authenticated since the token is valid, but using stored user data
-          set({ 
-            user: storedUser, 
-            isAuthenticated: true, 
-            isLoading: false 
-          });
-          return;
-        }
-        
-        // If we can't even get stored user data, this is a problem
-        throw new Error('User data missing critical information');
-      }
-      
-      console.log('User authenticated:', userData);
-      logToStorage('check_auth_success', { user: userData });
-      
-      // Update localStorage with user data
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('isLoggedIn', 'true');
-      
-      set({ 
-        user: userData, 
-        isAuthenticated: true, 
-        isLoading: false 
-      });
-      
-    } catch (error: any) {
-      console.error('Error checking auth:', error);
-      logToStorage('check_auth_error', { 
-        message: error.message,
-        response: error.response?.data 
-      });
-      
-      // If there's an error (invalid token, etc.), clear auth state
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('isLoggedIn');
-      
-      set({ 
-        user: null, 
-        isAuthenticated: false, 
-        isLoading: false 
-      });
-    }
-  },
-  
-  setAuthState: (state: { isAuthenticated: boolean; user: any; token: string }) => {
-    console.log('Setting auth state:', state);
-    set({
-      isAuthenticated: state.isAuthenticated,
-      user: state.user,
+// Create auth store with persistence
+const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      isAuthenticated: false,
       isLoading: false,
+      isInitialized: false,
       error: null,
-    });
-  },
-  
-  clearError: () => set({ error: null })
-}));
+      token: null,
+      user: null,
+      
+      // Login action
+      login: async (email: string, password: string) => {
+        // Log the action
+        get().addDebugLog('login:attempt', { email });
+        
+        try {
+          set({ isLoading: true, error: null });
+          
+          // Call the login API
+          const response = await authApi.login(email, password);
+          
+          // Save token and user data
+          const { token, user } = response;
+          
+          // Update localStorage manually for more reliable state persistence
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('isLoggedIn', 'true');
+          
+          // Update state
+          set({ 
+            isAuthenticated: true, 
+            isLoading: false,
+            token,
+            user
+          });
+          
+          // Log success
+          get().addDebugLog('login:success', { user: { email: user.email, id: user.id } });
+          
+        } catch (error: any) {
+          // Handle login error
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to login';
+          
+          // Update state with error
+          set({ 
+            isLoading: false, 
+            error: errorMessage,
+            isAuthenticated: false,
+            token: null,
+            user: null
+          });
+          
+          // Log error
+          get().addDebugLog('login:error', { message: errorMessage });
+          
+          throw new Error(errorMessage);
+        }
+      },
+      
+      // Logout action
+      logout: () => {
+        // Log the action
+        get().addDebugLog('logout', {});
+        
+        // Clear localStorage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('isLoggedIn');
+        
+        // Update state
+        set({
+          isAuthenticated: false,
+          token: null,
+          user: null,
+          error: null
+        });
+      },
+      
+      // Check if user is authenticated
+      checkAuth: async () => {
+        try {
+          set({ isLoading: true });
+          
+          // First check if we have a token in localStorage
+          const token = localStorage.getItem('token');
+          
+          // Log the attempt
+          get().addDebugLog('checkAuth:attempt', { hasToken: !!token });
+          
+          if (!token) {
+            // No token found, user is not authenticated
+            get().addDebugLog('checkAuth:noToken', {});
+            set({ 
+              isAuthenticated: false, 
+              isLoading: false,
+              isInitialized: true,
+              token: null,
+              user: null
+            });
+            return false;
+          }
+          
+          try {
+            // Verify token by fetching current user from API
+            const userData = await authApi.getCurrentUser();
+            
+            // If the request is successful, the user is authenticated
+            set({
+              isAuthenticated: true,
+              isLoading: false,
+              isInitialized: true,
+              user: userData,
+              token: token // Use the token from localStorage
+            });
+            
+            // Ensure localStorage is updated with latest user data
+            localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('isLoggedIn', 'true');
+            
+            // Log success
+            get().addDebugLog('checkAuth:success', { user: { email: userData.email, id: userData.id } });
+            
+            return true;
+          } catch (apiError: any) {
+            console.error("API error in checkAuth:", apiError);
+            
+            // If the API call fails, the token might be invalid
+            get().addDebugLog('checkAuth:apiError', { 
+              status: apiError.response?.status,
+              message: apiError.message 
+            });
+            
+            // Only clear auth if it's an authentication error (401)
+            if (apiError.response?.status === 401) {
+              // Clear localStorage
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              localStorage.removeItem('isLoggedIn');
+              
+              set({
+                isAuthenticated: false,
+                isLoading: false,
+                isInitialized: true,
+                token: null,
+                user: null
+              });
+            } else {
+              // For other errors, we keep the current state but mark as initialized
+              set({
+                isLoading: false,
+                isInitialized: true,
+                error: "Unable to verify authentication status"
+              });
+            }
+            
+            return false;
+          }
+        } catch (error: any) {
+          // Handle any other errors
+          console.error("Error in checkAuth:", error);
+          
+          get().addDebugLog('checkAuth:error', { message: error.message });
+          
+          set({
+            isAuthenticated: false,
+            isLoading: false,
+            isInitialized: true,
+            error: error.message || 'Authentication check failed',
+            token: null,
+            user: null
+          });
+          
+          return false;
+        }
+      },
+      
+      // Clear any error messages
+      clearError: () => {
+        set({ error: null });
+      },
+      
+      // Set auth state (useful for external auth like Google OAuth)
+      setAuthState: (state) => {
+        get().addDebugLog('setAuthState', { 
+          isAuthenticated: state.isAuthenticated,
+          hasUser: !!state.user,
+          hasToken: !!state.token
+        });
+        
+        set(state);
+      },
+      
+      // Add a debug log
+      addDebugLog: (action: string, data: any) => {
+        if (typeof window === 'undefined') return;
+        
+        try {
+          // Get existing logs
+          const logsJson = localStorage.getItem('auth_debug_logs') || '[]';
+          const logs = JSON.parse(logsJson);
+          
+          // Add new log with timestamp
+          logs.unshift({
+            timestamp: new Date().toISOString(),
+            action,
+            data
+          });
+          
+          // Keep only the latest 20 logs
+          const trimmedLogs = logs.slice(0, 20);
+          
+          // Save back to localStorage
+          localStorage.setItem('auth_debug_logs', JSON.stringify(trimmedLogs));
+        } catch (e) {
+          console.error('Failed to add debug log', e);
+        }
+      }
+    }),
+    {
+      name: 'auth-storage', // name for localStorage
+      partialize: (state) => ({ 
+        token: state.token,
+        user: state.user,
+        isAuthenticated: state.isAuthenticated
+      })
+    }
+  )
+);
 
 export default useAuthStore; 

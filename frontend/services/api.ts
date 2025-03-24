@@ -1,140 +1,181 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
+import getConfig from 'next/config';
 
-// Create an axios instance with the base URL from environment variables
-const api = axios.create({
-  baseURL: 'https://tez-social-production.up.railway.app',
+// Get the backend URL from environment variables
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+
+// Create a custom axios instance for our API
+const axiosInstance = axios.create({
+  baseURL: BACKEND_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add request and response logging
-api.interceptors.request.use(
+// Add a request interceptor to include the auth token in requests
+axiosInstance.interceptors.request.use(
   (config) => {
-    console.log('API Request:', {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-    });
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add a request interceptor to include auth token in requests
-api.interceptors.request.use(
-  (config) => {
-    // Get the token from localStorage
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    
-    // If token exists, add it to the authorization header
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers['Authorization'] = `Bearer ${token}`;
+    // Get the token from localStorage (if we're in a browser environment)
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     
+    // Log request for debugging
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, { 
+      baseURL: config.baseURL,
+      headers: config.headers 
+    });
+    
     return config;
   },
   (error) => {
+    console.error('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
 
-// Add a response interceptor to handle authentication errors
-api.interceptors.response.use(
+// Add a response interceptor for logging
+axiosInstance.interceptors.response.use(
   (response) => {
-    console.log('API Response:', {
-      url: response.config.url,
-      status: response.status,
-      data: response.data,
+    console.log(`[API Response] ${response.status} ${response.config.url}`, { 
+      data: response.data
     });
-    
-    // Check if the response has an error status in the data
-    // Some APIs return 200 but include error information in the body
-    if (response.data && (response.data.statusCode >= 400 || response.data.error)) {
-      const error: any = new Error(response.data.message || 'API Error');
-      error.response = {
-        status: response.data.statusCode || 500,
-        data: response.data
-      };
-      return Promise.reject(error);
-    }
-    
     return response;
   },
   (error) => {
-    console.error('API Response Error:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
-    
-    if (error.response?.status === 401) {
-      // If we receive a 401 Unauthorized, clear local storage and redirect to login
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('isLoggedIn');
-        window.location.href = '/auth/login';
-      }
-    }
+    console.error('[API Response Error]', error.response || error);
     return Promise.reject(error);
   }
 );
 
-// Auth related API calls
+// API service for authentication related endpoints
 export const authApi = {
-  register: (userData: { name: string; email: string; password: string }) => {
-    // Convert name to firstName for backend compatibility
-    const { name, ...rest } = userData;
-    const requestData = { 
-      firstName: name,
-      ...rest
-    };
-    
-    return api.post('/api/auth/register', requestData);
+  // Register a new user
+  register: async (userData: any) => {
+    const response = await axiosInstance.post('/auth/register', userData);
+    return response.data;
   },
   
-  login: (credentials: { email: string; password: string }) => {
-    return api.post('/api/auth/login', credentials);
+  // Login with email and password
+  login: async (email: string, password: string) => {
+    const response = await axiosInstance.post('/auth/login', { email, password });
+    return response.data;
   },
   
+  // Redirect to Google OAuth
   googleAuth: () => {
-    window.location.href = `${api.defaults.baseURL}/api/auth/google`;
-  }
+    // Get the frontend URL from environment or use default
+    const frontendUrl = typeof window !== 'undefined' 
+      ? `${window.location.protocol}//${window.location.host}`
+      : '';
+    
+    // Create the callback URL
+    const callbackUrl = `${frontendUrl}/auth/callback`;
+    
+    console.log("Redirecting to Google Auth...");
+    console.log("Backend URL for Google Auth:", `${BACKEND_URL}/auth/google`);
+    console.log("Callback URL:", callbackUrl);
+    
+    // Add the callback URL as a query parameter
+    const redirectUrl = `${BACKEND_URL}/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
+    
+    // This is a full page redirect to the Google OAuth endpoint
+    window.location.href = redirectUrl;
+  },
+  
+  // Logout the current user
+  logout: async () => {
+    const response = await axiosInstance.post('/auth/logout');
+    return response.data;
+  },
+  
+  // Get the current authenticated user
+  getCurrentUser: async () => {
+    const response = await axiosInstance.get('/auth/me');
+    return response.data;
+  },
 };
 
-// Telegram related API calls
-export const telegramApi = {
-  getConnectionStatus: () => {
-    return api.get('/api/telegram/status');
-  },
-  
-  connect: (phoneNumber: string) => {
-    return api.post('/api/telegram/connect', { phoneNumber });
-  },
-  
-  verifyCode: (code: string) => {
-    return api.post('/api/telegram/verify-code', { code });
-  },
-  
-  getContacts: () => {
-    return api.get('/api/telegram/contacts');
-  }
-};
-
-// User related API calls
+// API service for user related endpoints
 export const userApi = {
-  getCurrentUser: () => {
-    return api.get('/api/protected');
+  // Get user profile
+  getProfile: async (userId: string) => {
+    const response = await axiosInstance.get(`/users/${userId}`);
+    return response.data;
   },
   
-  updateProfile: (userData: { firstName?: string; lastName?: string; email?: string }) => {
-    return api.put('/api/users/update', userData);
-  }
+  // Update user profile
+  updateProfile: async (userId: string, profileData: any) => {
+    const response = await axiosInstance.patch(`/users/${userId}`, profileData);
+    return response.data;
+  },
+  
+  // Get followers
+  getFollowers: async (userId: string) => {
+    const response = await axiosInstance.get(`/users/${userId}/followers`);
+    return response.data;
+  },
+  
+  // Get following
+  getFollowing: async (userId: string) => {
+    const response = await axiosInstance.get(`/users/${userId}/following`);
+    return response.data;
+  },
 };
 
-export default api; 
+// API service for post related endpoints
+export const postApi = {
+  // Get feed posts
+  getFeed: async (page = 1, limit = 10) => {
+    const response = await axiosInstance.get(`/posts/feed?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+  
+  // Create a new post
+  createPost: async (postData: any) => {
+    const response = await axiosInstance.post('/posts', postData);
+    return response.data;
+  },
+  
+  // Get a single post
+  getPost: async (postId: string) => {
+    const response = await axiosInstance.get(`/posts/${postId}`);
+    return response.data;
+  },
+  
+  // Delete a post
+  deletePost: async (postId: string) => {
+    const response = await axiosInstance.delete(`/posts/${postId}`);
+    return response.data;
+  },
+  
+  // Like a post
+  likePost: async (postId: string) => {
+    const response = await axiosInstance.post(`/posts/${postId}/like`);
+    return response.data;
+  },
+  
+  // Unlike a post
+  unlikePost: async (postId: string) => {
+    const response = await axiosInstance.delete(`/posts/${postId}/like`);
+    return response.data;
+  },
+  
+  // Get post comments
+  getComments: async (postId: string, page = 1, limit = 10) => {
+    const response = await axiosInstance.get(`/posts/${postId}/comments?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+  
+  // Add a comment to a post
+  addComment: async (postId: string, content: string) => {
+    const response = await axiosInstance.post(`/posts/${postId}/comments`, { content });
+    return response.data;
+  },
+};
+
+// Default export for the axios instance
+export default axiosInstance; 

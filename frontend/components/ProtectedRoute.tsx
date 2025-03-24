@@ -1,12 +1,28 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
 
-// ProtectedRoute component to wrap around pages that require authentication
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+// Simple loading spinner component
+const LoadingSpinner = ({ size = "medium" }: { size?: "small" | "medium" | "large" }) => {
+  const sizeClasses = {
+    small: "h-4 w-4 border-2",
+    medium: "h-8 w-8 border-2",
+    large: "h-12 w-12 border-3",
+  };
+  
+  return (
+    <div className={`animate-spin rounded-full ${sizeClasses[size]} border-t-transparent border-primary border-solid`}></div>
+  );
+};
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const router = useRouter();
-  const { isAuthenticated, checkAuth } = useAuthStore();
-  const [checking, setChecking] = useState(true);
+  const { isAuthenticated, isInitialized, isLoading, checkAuth } = useAuthStore();
+  const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [debugLogs, setDebugLogs] = useState<any[]>([]);
@@ -26,35 +42,46 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const verifyAuth = async () => {
-      console.log("ProtectedRoute: Checking authentication");
       try {
-        // Try to verify authentication status with backend
-        await checkAuth();
-        console.log("ProtectedRoute: Auth check complete", { 
-          isAuthenticated: useAuthStore.getState().isAuthenticated 
-        });
-        setError(null);
-      } catch (error: any) {
-        console.error("ProtectedRoute: Auth check failed", error);
-        setError(error.message || 'Authentication failed');
+        console.log("ProtectedRoute: Verifying authentication");
+        // Check auth status using the store method
+        const isAuthorized = await checkAuth();
+        console.log("ProtectedRoute: Auth check result:", isAuthorized);
+        
+        if (!isAuthorized) {
+          console.log("ProtectedRoute: Not authorized, redirecting to login");
+          // Redirect to login page if not authenticated
+          router.replace('/auth/login');
+        } else {
+          console.log("ProtectedRoute: User is authenticated");
+        }
+      } catch (error) {
+        console.error("ProtectedRoute: Auth verification error", error);
+        // On error, redirect to login
+        router.replace('/auth/login');
       } finally {
-        setChecking(false);
+        // Finish checking regardless of result
+        setIsChecking(false);
       }
     };
 
-    verifyAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!checking && !isAuthenticated) {
-      console.log("ProtectedRoute: Not authenticated, redirecting to login");
-      // Use a timeout to allow for debug viewing if needed
-      setTimeout(() => {
-        // Use window.location for a hard redirect
-        window.location.href = '/auth/login';
-      }, 1000);
+    // Only run verification if auth state isn't initialized yet
+    if (!isInitialized) {
+      verifyAuth();
+    } else {
+      // If already initialized, just check the current state
+      console.log("ProtectedRoute: Auth already initialized:", { isAuthenticated });
+      
+      if (!isAuthenticated) {
+        console.log("ProtectedRoute: Not authenticated, redirecting to login");
+        router.replace('/auth/login');
+      } else {
+        console.log("ProtectedRoute: User is authenticated");
+      }
+      
+      setIsChecking(false);
     }
-  }, [checking, isAuthenticated, router]);
+  }, [router, isAuthenticated, isInitialized, checkAuth]);
 
   // Function to clear all auth data for testing
   const handleClearAuth = () => {
@@ -66,7 +93,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Show error state if authentication failed
-  if (error && !isAuthenticated && !checking) {
+  if (error && !isAuthenticated && !isChecking) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
         <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
@@ -125,53 +152,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Show loading or nothing while checking authentication
-  if (checking) {
+  // Show loading state while checking auth
+  if (isChecking || isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mb-4"></div>
-        <p className="text-gray-600">Verifying authentication...</p>
-        
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="mt-6 text-sm text-gray-500 hover:text-gray-700"
-        >
-          {showDebug ? 'Hide debug info' : 'Show debug info'}
-        </button>
-        
-        {showDebug && (
-          <div className="mt-4 p-4 bg-gray-100 rounded text-xs overflow-auto max-h-60 max-w-md w-full">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-bold">Auth Debug Logs:</h3>
-              <button
-                onClick={handleClearAuth}
-                className="text-sm text-red-500 hover:text-red-700"
-              >
-                Clear Auth Data
-              </button>
-            </div>
-            
-            {debugLogs.length === 0 ? (
-              <p>No logs available</p>
-            ) : (
-              <ul>
-                {debugLogs.map((log, i) => (
-                  <li key={i} className="mb-2 border-b border-gray-300 pb-1">
-                    <div><span className="font-bold">Time:</span> {log.timestamp}</div>
-                    <div><span className="font-bold">Action:</span> {log.action}</div>
-                    <div><span className="font-bold">Data:</span> {JSON.stringify(log.data)}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="large" />
       </div>
     );
   }
 
-  // Only render children if authenticated
-  return isAuthenticated ? <>{children}</> : null;
+  // If initialized and authenticated, render children
+  // If not authenticated, this will never render as we'll redirect
+  return <>{children}</>;
 };
 
 export default ProtectedRoute; 
