@@ -10,7 +10,7 @@ export const jwtConfig = registerAs('jwt', () => ({
 }));
 
 export const telegramConfig = registerAs('telegram', () => ({
-  apiId: parseInt(process.env.TELEGRAM_API_ID, 10),
+  apiId: process.env.TELEGRAM_API_ID ? parseInt(process.env.TELEGRAM_API_ID, 10) : undefined,
   apiHash: process.env.TELEGRAM_API_HASH,
 }));
 
@@ -21,7 +21,7 @@ export const googleConfig = registerAs('google', () => ({
 
 export const appConfig = registerAs('app', () => ({
   nodeEnv: process.env.NODE_ENV,
-  port: parseInt(process.env.PORT, 10) || 3001,
+  port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3001,
   apiUrl: process.env.API_URL,
   corsOrigin: process.env.CORS_ORIGIN,
 })); 
