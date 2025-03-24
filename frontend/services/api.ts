@@ -79,7 +79,7 @@ export const authApi = {
     console.log("Backend URL for Google Auth:", `${BACKEND_URL}/auth/google`);
     console.log("Callback URL:", callbackUrl);
     
-    // Add the callback URL as a query parameter
+    // Add the callback URL as a query parameter - now using non-prefixed path
     const redirectUrl = `${BACKEND_URL}/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
     
     // This is a full page redirect to the Google OAuth endpoint

@@ -17,8 +17,8 @@ export class AuthController {
     this.frontendUrl = 'https://tez-social.vercel.app';
     this.logger.log(`AuthController initialized with frontend URL: ${this.frontendUrl}`);
     
-    // Debug all environment variables
-    this.logger.log(`DEBUG: All environment variables: ${JSON.stringify(process.env)}`);
+    // Log that we're using paths without /api prefix
+    this.logger.log(`Auth routes configured without /api prefix. Google OAuth will use: /auth/google and /auth/google/callback`);
   }
 
   @Post('register')
@@ -29,7 +29,7 @@ export class AuthController {
       message: 'Success',
       data: await this.authService.register(registerDto),
       timestamp: new Date().toISOString(),
-      path: '/api/auth/register',
+      path: '/auth/register',
     };
   }
 
@@ -41,14 +41,14 @@ export class AuthController {
       message: 'Success',
       data: await this.authService.login(loginDto.email, loginDto.password),
       timestamp: new Date().toISOString(),
-      path: '/api/auth/login',
+      path: '/auth/login',
     };
   }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth(@Query('redirectTo') redirectTo: string, @Req() req: any) {
-    this.logger.log(`Google OAuth route accessed - redirecting to Google login.`);
+    this.logger.log(`Google OAuth route accessed at /auth/google - redirecting to Google login.`);
     this.logger.log(`RedirectTo param: ${redirectTo || 'not provided'}`);
     
     // We don't need to store redirectTo anymore as we'll use a fixed URL
@@ -58,7 +58,7 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthCallback(@Req() req: any, @Res() res: Response) {
-    this.logger.log('Google OAuth callback received');
+    this.logger.log('Google OAuth callback received at /auth/google/callback');
     
     try {
       this.logger.log(`Google OAuth callback data: ${JSON.stringify(req.user || {})}`);
