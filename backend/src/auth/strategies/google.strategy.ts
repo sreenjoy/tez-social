@@ -14,8 +14,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ) {
     const clientID = configService.get('GOOGLE_CLIENT_ID');
     const clientSecret = configService.get('GOOGLE_CLIENT_SECRET');
-    const callbackURL = configService.get('GOOGLE_CALLBACK_URL');
-
+    
+    // Hardcode the callback URL to ensure it's correct
+    const callbackURL = 'https://tez-social-production.up.railway.app/api/auth/google/callback';
+    
     if (!clientID || !clientSecret) {
       console.warn('Google OAuth credentials not configured properly.');
     }
@@ -26,6 +28,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       callbackURL,
       scope: ['email', 'profile'],
     });
+    
+    this.logger.log(`Initialized Google Strategy with callback URL: ${callbackURL}`);
   }
 
   async validate(
