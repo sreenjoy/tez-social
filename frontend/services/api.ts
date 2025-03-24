@@ -76,11 +76,11 @@ export const authApi = {
     const callbackUrl = `${frontendUrl}/auth/callback`;
     
     console.log("Redirecting to Google Auth...");
-    console.log("Backend URL for Google Auth:", `${BACKEND_URL}/auth/google`);
+    console.log("Backend URL for Google Auth:", `${BACKEND_URL}/api/auth/google`);
     console.log("Callback URL:", callbackUrl);
     
-    // Add the callback URL as a query parameter - now using non-prefixed path
-    const redirectUrl = `${BACKEND_URL}/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
+    // Add the callback URL as a query parameter - using path with /api prefix
+    const redirectUrl = `${BACKEND_URL}/api/auth/google?redirectTo=${encodeURIComponent(callbackUrl)}`;
     
     // This is a full page redirect to the Google OAuth endpoint
     window.location.href = redirectUrl;

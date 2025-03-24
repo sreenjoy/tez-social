@@ -12,13 +12,8 @@ async function bootstrap() {
     transform: true,
   }));
 
-  // Set global prefix but exclude Google OAuth routes
-  app.setGlobalPrefix('api', {
-    exclude: [
-      'auth/google',
-      'auth/google/callback',
-    ],
-  });
+  // Set global prefix
+  app.setGlobalPrefix('api');
 
   // Enable CORS
   app.enableCors();
@@ -41,6 +36,5 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port);
   logger.log(`Production server running on port ${port}`);
-  logger.log(`Auth routes available at: http://localhost:${port}/auth/google and http://localhost:${port}/auth/google/callback`);
 }
 bootstrap();

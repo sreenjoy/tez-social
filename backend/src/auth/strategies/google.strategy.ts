@@ -15,8 +15,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const clientID = configService.get('GOOGLE_CLIENT_ID');
     const clientSecret = configService.get('GOOGLE_CLIENT_SECRET');
     
-    // Use the correct callback URL - make sure it matches exactly what's registered in Google Console
-    const callbackURL = 'https://tez-social-production.up.railway.app/auth/google/callback';
+    // Use the callback URL with /api prefix as registered in Google Console
+    const callbackURL = 'https://tez-social-production.up.railway.app/api/auth/google/callback';
     
     // First call super before using this
     super({
