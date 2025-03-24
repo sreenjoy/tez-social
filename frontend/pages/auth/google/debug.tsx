@@ -45,11 +45,24 @@ const GoogleDebugPage = () => {
         
         <ol className="list-decimal pl-6 mb-6 space-y-2">
           <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console Credentials</a></li>
-          <li>Find your OAuth 2.0 Client ID for this project</li>
+          <li>Find your OAuth 2.0 Client ID for this project (Client ID: 559553261529-3v55f17t9mu5hqhbbehlv2a2j56aia8n.apps.googleusercontent.com)</li>
           <li>Click "Edit" on the client</li>
-          <li>Under "Authorized redirect URIs", add the URL shown above</li>
+          <li>Under "Authorized redirect URIs", add the exact URL shown above</li>
+          <li>Ensure there are no trailing slashes or extra characters</li>
           <li>Click "Save"</li>
+          <li>Wait 5-10 minutes for the changes to propagate through Google's systems</li>
         </ol>
+        
+        <div className="bg-yellow-50 p-4 rounded mb-6 border border-yellow-200">
+          <h2 className="font-bold text-yellow-800">Common Issues</h2>
+          <ul className="list-disc pl-6 text-yellow-700">
+            <li>Mismatch in http vs https</li>
+            <li>Missing or extra slashes at the end of the URL</li>
+            <li>Incorrect port numbers</li>
+            <li>Typographical errors in the domain or path</li>
+            <li>Forgetting to include the global prefix 'api' in the path</li>
+          </ul>
+        </div>
         
         <p className="mb-6">{message}</p>
         
