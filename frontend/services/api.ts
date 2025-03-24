@@ -51,6 +51,18 @@ api.interceptors.response.use(
       status: response.status,
       data: response.data,
     });
+    
+    // Check if the response has an error status in the data
+    // Some APIs return 200 but include error information in the body
+    if (response.data && (response.data.statusCode >= 400 || response.data.error)) {
+      const error: any = new Error(response.data.message || 'API Error');
+      error.response = {
+        status: response.data.statusCode || 500,
+        data: response.data
+      };
+      return Promise.reject(error);
+    }
+    
     return response;
   },
   (error) => {

@@ -67,18 +67,28 @@ const useAuthStore = create<AuthState>((set, get) => ({
       logToStorage('login_response', response.data);
       
       // Extract token from the response
-      const responseData = response.data.data || response.data;
-      const token = responseData.access_token || responseData.token;
+      // Check both standard format and nested data format
+      const token = response.data.access_token || 
+                   (response.data.data && response.data.data.access_token) || 
+                   response.data.token;
       
       if (!token) {
         throw new Error('No token received from server');
       }
       
-      // Create a user object based on the email since the backend doesn't return user data
-      const userData = {
-        email,
-        firstName: email.split('@')[0]
-      };
+      // Create a user object based on the email if the backend doesn't return user data
+      // This is a temporary solution until the backend provides complete user data
+      let userData = response.data.user || 
+                    (response.data.data && response.data.data.user) || 
+                    null;
+      
+      if (!userData) {
+        // Minimal user object for session if backend doesn't provide user details
+        userData = {
+          email,
+          firstName: email.split('@')[0]
+        };
+      }
       
       // Store token and user data
       localStorage.setItem('token', token);
@@ -132,18 +142,28 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Register response:', response.data);
       logToStorage('register_response', response.data);
       
-      // Create user data from registration information since backend may not return it
-      const userData = {
-        email,
-        firstName: name
-      };
-      
       // Extract token from the response
-      const responseData = response.data.data || response.data;
-      const token = responseData.access_token || responseData.token;
+      // Check both standard format and nested data format
+      const token = response.data.access_token || 
+                   (response.data.data && response.data.data.access_token) || 
+                   response.data.token;
       
       if (!token) {
         throw new Error('No token received from server');
+      }
+      
+      // Create a user object based on the registration information
+      // This is a temporary solution until the backend provides complete user data
+      let userData = response.data.user || 
+                    (response.data.data && response.data.data.user) || 
+                    null;
+      
+      if (!userData) {
+        // Minimal user object for session if backend doesn't provide user details
+        userData = {
+          email,
+          firstName: name
+        };
       }
       
       // Store token and user data
@@ -222,11 +242,34 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('getCurrentUser response:', response.data);
       logToStorage('get_current_user_response', response.data);
       
-      // Extract user data from the response
-      const userData = response.data.data || response.data;
+      // Extract user data from the response, handling different response formats
+      const userData = response.data.user || 
+                      (response.data.data && response.data.data.user) || 
+                      response.data.data || 
+                      response.data;
       
       if (!userData || typeof userData !== 'object') {
         throw new Error('Invalid user data returned from server');
+      }
+      
+      // Ensure we have at least email in the user data
+      if (!userData.email && token) {
+        // Try to get stored user data as a fallback
+        const storedUser = safeParseJSON(localStorage.getItem('user'));
+        if (storedUser && storedUser.email) {
+          console.log('Using stored user data since API response lacks email:', storedUser);
+          
+          // Still authenticated since the token is valid, but using stored user data
+          set({ 
+            user: storedUser, 
+            isAuthenticated: true, 
+            isLoading: false 
+          });
+          return;
+        }
+        
+        // If we can't even get stored user data, this is a problem
+        throw new Error('User data missing critical information');
       }
       
       console.log('User authenticated:', userData);
