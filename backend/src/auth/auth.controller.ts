@@ -57,14 +57,26 @@ export class AuthController {
   googleAuthCallback(@Req() req: any, @Res() res: Response) {
     this.logger.log('Google OAuth callback received');
     this.logger.log(`Callback URL: ${req.url}`);
+    this.logger.log(`Original URL: ${req.originalUrl}`);
+    this.logger.log(`Request user: ${JSON.stringify(req.user || {})}`);
     
-    const { access_token, user } = req.user;
-    
-    // Create a URL with the token as a parameter
-    const redirectUrl = `${this.frontendUrl}/auth/google/success?token=${access_token}&user=${encodeURIComponent(JSON.stringify(user))}`;
-    
-    // Redirect to frontend with token
-    this.logger.log(`Redirecting to frontend: ${redirectUrl}`);
-    res.redirect(redirectUrl);
+    try {
+      const { access_token, user } = req.user || {};
+      
+      if (!access_token || !user) {
+        this.logger.error('Missing user data or access token');
+        return res.redirect(`${this.frontendUrl}/login?error=authentication_failed`);
+      }
+      
+      // Create a URL with the token as a parameter
+      const redirectUrl = `${this.frontendUrl}/auth/google/success?token=${access_token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+      
+      // Redirect to frontend with token
+      this.logger.log(`Redirecting to frontend: ${redirectUrl}`);
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      this.logger.error(`Error in Google callback: ${error.message}`, error.stack);
+      return res.redirect(`${this.frontendUrl}/login?error=authentication_failed`);
+    }
   }
 } 
