@@ -67,37 +67,24 @@ const useAuthStore = create<AuthState>((set, get) => ({
       logToStorage('login_response', response.data);
       
       // Extract token and user data from the response
-      // Handle both possible response formats
       const responseData = response.data.data || response.data;
+      const token = responseData.access_token || responseData.token;
+      const userData = responseData.user || responseData;
       
-      // For mock API or backend with standard format
-      const access_token = responseData.access_token || responseData.token;
-      const user = responseData.user || responseData;
-      
-      // Verify we have a token
-      if (!access_token) {
-        const error = 'Invalid response: No token found';
-        logToStorage('login_error', { error, response: responseData });
-        throw new Error(error);
-      }
-      
-      // Verify we have user data
-      if (!user || typeof user !== 'object') {
-        const error = 'Invalid response: User data missing or invalid';
-        logToStorage('login_error', { error, response: responseData });
-        throw new Error(error);
+      if (!token) {
+        throw new Error('No token received from server');
       }
       
       // Store token and user data
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('isLoggedIn', 'true');
       
-      console.log('Auth state updated:', { user, isAuthenticated: true });
-      logToStorage('login_success', { user });
+      console.log('Auth state updated:', { user: userData, isAuthenticated: true });
+      logToStorage('login_success', { user: userData });
       
       set({ 
-        user, 
+        user: userData, 
         isAuthenticated: true, 
         isLoading: false 
       });
@@ -125,37 +112,24 @@ const useAuthStore = create<AuthState>((set, get) => ({
       logToStorage('register_response', response.data);
       
       // Extract token and user data from the response
-      // Handle both possible response formats
       const responseData = response.data.data || response.data;
+      const token = responseData.access_token || responseData.token;
+      const userData = responseData.user || responseData;
       
-      // For mock API or backend with standard format
-      const access_token = responseData.access_token || responseData.token;
-      const user = responseData.user || responseData;
-      
-      // Verify we have a token
-      if (!access_token) {
-        const error = 'Invalid response: No token found';
-        logToStorage('register_error', { error, response: responseData });
-        throw new Error(error);
-      }
-      
-      // Verify we have user data
-      if (!user || typeof user !== 'object') {
-        const error = 'Invalid response: User data missing or invalid';
-        logToStorage('register_error', { error, response: responseData });
-        throw new Error(error);
+      if (!token) {
+        throw new Error('No token received from server');
       }
       
       // Store token and user data
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('isLoggedIn', 'true');
       
-      console.log('Auth state updated after registration:', { user, isAuthenticated: true });
-      logToStorage('register_success', { user });
+      console.log('Auth state updated after registration:', { user: userData, isAuthenticated: true });
+      logToStorage('register_success', { user: userData });
       
       set({ 
-        user, 
+        user: userData, 
         isAuthenticated: true, 
         isLoading: false 
       });
@@ -197,10 +171,9 @@ const useAuthStore = create<AuthState>((set, get) => ({
     
     // First check if we have a token in localStorage
     const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
     
-    console.log('Local storage:', { token: !!token, user: !!storedUser });
-    logToStorage('check_auth', { hasToken: !!token, hasUser: !!storedUser });
+    console.log('Local storage:', { token: !!token });
+    logToStorage('check_auth', { hasToken: !!token });
     
     if (!token) {
       console.log('No token found, not authenticated');
@@ -210,52 +183,27 @@ const useAuthStore = create<AuthState>((set, get) => ({
     }
     
     try {
-      // Try to get the current user (this will use the token from localStorage via interceptor)
-      // Based on the railway logs, there is no /users/me or /auth/me endpoint
-      // For now, we'll just use the stored user data since we're in mock mode anyway
-      // In production, this would need to be updated to match the actual API endpoint
-      
-      if (typeof window !== 'undefined') {
-        const storedUserData = localStorage.getItem('user');
-        if (storedUserData) {
-          const user = JSON.parse(storedUserData);
-          console.log('Using stored user data:', user);
-          logToStorage('check_auth_success', { user, fromStorage: true });
-          
-          set({ 
-            user, 
-            isAuthenticated: true, 
-            isLoading: false 
-          });
-          return;
-        }
-      }
-      
-      // If we don't have stored user data or we're not in a browser, 
-      // try to get the current user from the API
+      // Try to get the current user from the API using the token
       const response = await userApi.getCurrentUser();
       console.log('getCurrentUser response:', response.data);
       logToStorage('get_current_user_response', response.data);
       
-      // Extract user data from the response data property
-      const responseData = response.data.data || response.data;
-      const user = responseData.user || responseData;
+      // Extract user data from the response
+      const userData = response.data.data || response.data;
       
-      if (!user || typeof user !== 'object') {
-        const error = 'Invalid user data';
-        logToStorage('check_auth_invalid_user', { responseData });
-        throw new Error(error);
+      if (!userData) {
+        throw new Error('Invalid user data');
       }
       
-      console.log('User authenticated:', user);
-      logToStorage('check_auth_success', { user });
+      console.log('User authenticated:', userData);
+      logToStorage('check_auth_success', { user: userData });
       
-      // Make sure localStorage is updated with latest user data
-      localStorage.setItem('user', JSON.stringify(user));
+      // Update localStorage with user data
+      localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('isLoggedIn', 'true');
       
       set({ 
-        user, 
+        user: userData, 
         isAuthenticated: true, 
         isLoading: false 
       });
