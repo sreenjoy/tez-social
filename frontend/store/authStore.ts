@@ -67,9 +67,16 @@ const useAuthStore = create<AuthState>((set, get) => ({
       logToStorage('login_response', response.data);
       
       // Extract token and user data from the response
+      // The backend doesn't include user data in the login response,
+      // so we create a minimal user object with the email
+      const userData = {
+        email,
+        firstName: email.split('@')[0]
+      };
+      
+      // Check if we have a token in the response
       const responseData = response.data.data || response.data;
       const token = responseData.access_token || responseData.token;
-      const userData = responseData.user || responseData;
       
       if (!token) {
         throw new Error('No token received from server');
@@ -91,7 +98,15 @@ const useAuthStore = create<AuthState>((set, get) => ({
       
     } catch (error: any) {
       console.error('Login error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to login. Please try again.';
+      let errorMessage = 'Failed to login. Please try again.';
+      
+      // Extract error message from the response if possible
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       logToStorage('login_error', { message: errorMessage, error });
       
       set({ 
@@ -111,10 +126,15 @@ const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Register response:', response.data);
       logToStorage('register_response', response.data);
       
-      // Extract token and user data from the response
+      // Create user data from registration information since backend may not return it
+      const userData = {
+        email,
+        firstName: name
+      };
+      
+      // Extract token from the response
       const responseData = response.data.data || response.data;
       const token = responseData.access_token || responseData.token;
-      const userData = responseData.user || responseData;
       
       if (!token) {
         throw new Error('No token received from server');
@@ -136,7 +156,15 @@ const useAuthStore = create<AuthState>((set, get) => ({
       
     } catch (error: any) {
       console.error('Registration error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      // Extract error message from the response if possible
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       logToStorage('register_error', { message: errorMessage, error });
       
       set({ 
