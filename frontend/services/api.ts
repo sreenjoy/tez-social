@@ -48,7 +48,12 @@ api.interceptors.response.use(
 // Auth related API calls
 export const authApi = {
   register: (userData: { name: string; email: string; password: string }) => {
-    return api.post('/auth/register', userData);
+    // Convert name to firstName for backend compatibility
+    const { name, ...rest } = userData;
+    return api.post('/auth/register', { 
+      firstName: name,
+      ...rest
+    });
   },
   
   login: (credentials: { email: string; password: string }) => {

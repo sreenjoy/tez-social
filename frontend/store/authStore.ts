@@ -3,7 +3,8 @@ import { authApi, userApi } from '../services/api';
 
 interface User {
   id?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   createdAt?: string;
 }
@@ -33,7 +34,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
     
     try {
       const response = await authApi.login({ email, password });
-      const { token, user } = response.data;
+      // Extract token and user data from the response
+      const { access_token: token, user } = response.data.data;
       
       // Store token and user data
       localStorage.setItem('token', token);
@@ -61,7 +63,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
     
     try {
       const response = await authApi.register({ name, email, password });
-      const { token, user } = response.data;
+      // Extract token and user data from the response
+      const { access_token: token, user } = response.data.data;
       
       // Store token and user data
       localStorage.setItem('token', token);

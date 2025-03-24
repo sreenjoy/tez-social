@@ -106,7 +106,7 @@ export default function Dashboard() {
                 <h1 className="text-xl font-bold">Tez Social</h1>
               </div>
               <div className="flex items-center">
-                <span className="mr-4">Welcome, {user?.name || user?.email}</span>
+                <span className="mr-4">Welcome, {user?.firstName || user?.email}</span>
                 <button
                   onClick={logout}
                   className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
