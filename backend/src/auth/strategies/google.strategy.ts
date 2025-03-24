@@ -27,12 +27,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientSecret,
       callbackURL,
       scope: ['email', 'profile'],
+      passReqToCallback: true,
     });
     
     this.logger.log(`Initialized Google Strategy with callback URL: ${callbackURL}`);
   }
 
   async validate(
+    request: any,
     accessToken: string,
     refreshToken: string,
     profile: any,
@@ -40,6 +42,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ): Promise<any> {
     try {
       this.logger.log(`Google auth for user: ${profile.emails[0].value}`);
+      this.logger.log(`Request URL: ${request.url}`);
+      this.logger.log(`Original URL: ${request.originalUrl}`);
+      this.logger.log(`Host: ${request.headers.host}`);
       
       const { name, emails, photos } = profile;
       const user = await this.authService.validateGoogleUser({
@@ -50,7 +55,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         googleId: profile.id,
       });
 
-      done(null, user);
+      done(null, { access_token: accessToken, user });
     } catch (error) {
       this.logger.error(`Google auth error: ${error.message}`, error.stack);
       done(error, false);
