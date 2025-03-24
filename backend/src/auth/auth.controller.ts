@@ -15,6 +15,9 @@ export class AuthController {
   ) {
     this.frontendUrl = this.configService.get('FRONTEND_URL') || '';
     this.logger.log(`AuthController initialized with frontend URL: ${this.frontendUrl}`);
+    
+    // Debug all environment variables
+    this.logger.log(`DEBUG: All environment variables: ${JSON.stringify(process.env)}`);
   }
 
   @Post('register')
@@ -62,11 +65,20 @@ export class AuthController {
         return res.redirect(`${this.frontendUrl}/login?error=authentication_failed&reason=missing_data`);
       }
       
-      // Create a URL with the token as a parameter
-      const redirectUrl = `${this.frontendUrl}/auth/google/success?token=${access_token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+      // Debug information about the frontend URL
+      this.logger.log(`DEBUG: frontendUrl from config: "${this.frontendUrl}"`);
+      this.logger.log(`DEBUG: frontendUrl type: ${typeof this.frontendUrl}`);
       
-      // Redirect to frontend with token
+      // Force use the correct frontend URL
+      const correctFrontendUrl = 'https://tez-social-frontend.vercel.app';
+      this.logger.log(`DEBUG: Using hardcoded frontend URL: ${correctFrontendUrl}`);
+      
+      // Create a URL with the token as a parameter
+      const redirectUrl = `${correctFrontendUrl}/auth/google/success?token=${access_token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+      
+      // Log the exact redirect URL for debugging
       this.logger.log(`Redirecting to frontend URL: ${redirectUrl}`);
+      
       return res.redirect(redirectUrl);
     } catch (error) {
       this.logger.error(`Error in Google callback: ${error.message}`);
