@@ -1,0 +1,17 @@
+# Critical configuration files
+.env
+.env.example
+package-lock.json
+yarn.lock
+
+# Deployment configurations
+vercel.json
+railway.json
+
+# Important data files
+src/data/initialData.json
+
+# Production build directories
+build/
+dist/
+node_modules/ 
