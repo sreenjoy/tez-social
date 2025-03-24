@@ -4,55 +4,61 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useAuthStore from '../../store/authStore';
 
-export default function RegisterPage() {
+const RegisterPage = () => {
   const router = useRouter();
-  const { register, error: authError, isLoading, isAuthenticated, clearError } = useAuthStore();
+  const { register, isAuthenticated, error: authError, clearError } = useAuthStore();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     // If already authenticated, redirect to dashboard
+    console.log("Register page: Auth state check", { isAuthenticated, authError });
     if (isAuthenticated) {
-      router.push('/dashboard');
+      console.log("Register page: Redirecting to dashboard");
+      // Use window.location for a hard redirect
+      window.location.href = '/dashboard';
     }
     
     // Show auth store errors
     if (authError) {
-      setError(authError);
+      setFormError(authError);
       clearError();
     }
-  }, [isAuthenticated, authError, router, clearError]);
+  }, [isAuthenticated, authError, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
-    // Validation
+    setFormError('');
+
+    // Form validation
     if (!name || !email || !password || !confirmPassword) {
-      setError('All fields are required');
+      setFormError('All fields are required');
       return;
     }
-    
+
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setFormError('Password must be at least 6 characters long');
       return;
     }
-    
+
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setFormError('Passwords do not match');
       return;
     }
-    
+
     try {
+      console.log("Register page: Attempting registration", { name, email });
       await register(name, email, password);
-      // Successful registration will update isAuthenticated in the store,
-      // which will trigger the useEffect to redirect
+      console.log("Register page: Registration successful");
+      // Directly redirect after successful registration
+      window.location.href = '/dashboard';
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      console.error("Register page: Registration failed", err);
+      setFormError(err.message || 'Registration failed. Please try again.');
     }
   };
 
@@ -62,111 +68,91 @@ export default function RegisterPage() {
         <title>Register | Tez Social</title>
       </Head>
       
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create a new account
-          </h2>
-        </div>
+      <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">Create an Account</h1>
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-          
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="name" className="sr-only">Full name</label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="confirm-password" className="sr-only">Confirm password</label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
+        {formError && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {formError}
           </div>
+        )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </button>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+              Full Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Doe"
+            />
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Already have an account? Sign in
-              </Link>
-            </div>
-            
-            <div className="text-sm">
-              <button
-                type="button"
-                onClick={() => {
-                  // You can implement Google auth here using the authApi
-                  window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
-                }}
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Sign up with Google
-              </button>
-            </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+            />
           </div>
+          
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="********"
+            />
+          </div>
+          
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-600 transition duration-200"
+          >
+            Sign Up
+          </button>
         </form>
+        
+        <div className="mt-4 text-center">
+          <p className="text-gray-600">
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-blue-500 hover:text-blue-700">
+              Sign In
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
-} 
+};
+
+export default RegisterPage; 

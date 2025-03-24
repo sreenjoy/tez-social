@@ -12,7 +12,7 @@ interface TelegramStatus {
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatus>({ isConnected: false });
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -22,15 +22,10 @@ export default function Dashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // If not authenticated, redirect to login
-    if (!authLoading && !isAuthenticated) {
-      router.push('/auth/login');
-      return;
-    }
-
     // Check Telegram connection status
     const checkTelegramStatus = async () => {
       try {
+        console.log("Dashboard: Checking Telegram status");
         const response = await telegramApi.getConnectionStatus();
         setTelegramStatus(response.data);
         if (response.data.isConnected) {
@@ -41,10 +36,8 @@ export default function Dashboard() {
       }
     };
 
-    if (isAuthenticated) {
-      checkTelegramStatus();
-    }
-  }, [isAuthenticated, authLoading, router]);
+    checkTelegramStatus();
+  }, []);
 
   const handleConnectTelegram = () => {
     setStep('phone');
@@ -83,14 +76,6 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <ProtectedRoute>

@@ -1,40 +1,48 @@
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+// ProtectedRoute component to wrap around pages that require authentication
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const { isAuthenticated, checkAuth } = useAuthStore();
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Check authentication on mount
-    console.log("ProtectedRoute: Checking authentication");
-    checkAuth();
-  }, [checkAuth]);
+    const verifyAuth = async () => {
+      console.log("ProtectedRoute: Checking authentication");
+      try {
+        // Try to verify authentication status with backend
+        await checkAuth();
+        console.log("ProtectedRoute: Auth check complete", { isAuthenticated: useAuthStore.getState().isAuthenticated });
+      } catch (error) {
+        console.error("ProtectedRoute: Auth check failed", error);
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    verifyAuth();
+  }, []);
 
   useEffect(() => {
-    // If not authenticated and not loading, redirect to login
-    console.log("ProtectedRoute: Auth state changed", { isAuthenticated, isLoading });
-    if (!isLoading && !isAuthenticated) {
-      console.log("ProtectedRoute: Redirecting to login");
-      router.push('/auth/login');
+    if (!checking && !isAuthenticated) {
+      console.log("ProtectedRoute: Not authenticated, redirecting to login");
+      // Use window.location for a hard redirect
+      window.location.href = '/auth/login';
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [checking, isAuthenticated, router]);
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  // Show loading or nothing while checking authentication
+  if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  // If authenticated, render the children
+  // Only render children if authenticated
   return isAuthenticated ? <>{children}</> : null;
 };
 

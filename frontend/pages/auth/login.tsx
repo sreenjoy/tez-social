@@ -17,7 +17,8 @@ export default function LoginPage() {
     console.log("Login page: Auth state check", { isAuthenticated, authError });
     if (isAuthenticated) {
       console.log("Login page: Redirecting to dashboard");
-      router.push('/dashboard');
+      // Use window.location for a hard redirect to avoid any router caching issues
+      window.location.href = '/dashboard';
     }
     
     // Show auth store errors
@@ -35,8 +36,8 @@ export default function LoginPage() {
       console.log("Login page: Attempting login", { email });
       await login(email, password);
       console.log("Login page: Login successful");
-      // Successful login will update isAuthenticated in the store,
-      // which will trigger the useEffect to redirect
+      // Directly redirect after successful login instead of waiting for the effect
+      window.location.href = '/dashboard';
     } catch (err: any) {
       console.error("Login page: Login failed", err);
       setError(err.message || 'Failed to login. Please check your credentials.');
