@@ -13,7 +13,8 @@ export class AuthController {
     private authService: AuthService,
     private configService: ConfigService,
   ) {
-    this.frontendUrl = this.configService.get('FRONTEND_URL') || 'https://tez-social.vercel.app';
+    // Make sure we always use the production URL for redirects
+    this.frontendUrl = 'https://tez-social.vercel.app';
     this.logger.log(`AuthController initialized with frontend URL: ${this.frontendUrl}`);
     
     // Debug all environment variables
@@ -47,15 +48,10 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth(@Query('redirectTo') redirectTo: string, @Req() req: any) {
-    this.logger.log(`Google OAuth route accessed - redirecting to Google login. 
-      RedirectTo param: ${redirectTo || 'not provided'}`);
+    this.logger.log(`Google OAuth route accessed - redirecting to Google login.`);
+    this.logger.log(`RedirectTo param: ${redirectTo || 'not provided'}`);
     
-    // Store redirectTo in session if provided, otherwise use default
-    if (req.session) {
-      req.session.redirectTo = redirectTo || `${this.frontendUrl}/auth/callback`;
-      this.logger.log(`Stored redirectTo in session: ${req.session.redirectTo}`);
-    }
-    
+    // We don't need to store redirectTo anymore as we'll use a fixed URL
     // This will redirect to Google OAuth
   }
 
@@ -73,16 +69,14 @@ export class AuthController {
         return res.redirect(`${this.frontendUrl}/auth/callback?error=authentication_failed&reason=missing_data`);
       }
       
-      // Get redirectTo from session or use default
-      const redirectTo = req.session?.redirectTo || `${this.frontendUrl}/auth/callback`;
+      // Always use a fixed production redirect URL
+      const callbackUrl = `${this.frontendUrl}/auth/callback`;
       
-      // Check if redirectTo is already a full URL
-      const redirectUrl = redirectTo.includes('://') 
-        ? `${redirectTo}?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`
-        : `${this.frontendUrl}${redirectTo}?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
+      // Add token and user data to the redirect URL
+      const finalRedirectUrl = `${callbackUrl}?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
       
-      this.logger.log(`Redirecting to frontend URL: ${redirectUrl}`);
-      return res.redirect(redirectUrl);
+      this.logger.log(`Redirecting to: ${finalRedirectUrl}`);
+      return res.redirect(finalRedirectUrl);
     } catch (error) {
       this.logger.error(`Error in Google callback: ${error.message}`);
       this.logger.error(error.stack);
