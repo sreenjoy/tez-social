@@ -24,7 +24,7 @@ export class AuthController {
       message: 'Success',
       data: await this.authService.register(registerDto),
       timestamp: new Date().toISOString(),
-      path: '/api/auth/register',
+      path: '/auth/register',
     };
   }
 
@@ -36,7 +36,7 @@ export class AuthController {
       message: 'Success',
       data: await this.authService.login(loginDto.email, loginDto.password),
       timestamp: new Date().toISOString(),
-      path: '/api/auth/login',
+      path: '/auth/login',
     };
   }
 
