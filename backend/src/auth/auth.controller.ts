@@ -51,7 +51,12 @@ export class AuthController {
     this.logger.log(`Google OAuth route accessed at /api/auth/google - redirecting to Google login.`);
     this.logger.log(`RedirectTo param: ${redirectTo || 'not provided'}`);
     
-    // We don't need to store redirectTo anymore as we'll use a fixed URL
+    // Store the redirect URL in session if available
+    if (redirectTo && req.session) {
+      req.session.redirectTo = redirectTo;
+      this.logger.log(`Stored redirectTo in session: ${redirectTo}`);
+    }
+    
     // This will redirect to Google OAuth
   }
 
@@ -69,11 +74,21 @@ export class AuthController {
         return res.redirect(`${this.frontendUrl}/auth/login?error=authentication_failed&reason=missing_data`);
       }
       
-      // Always redirect to the login page which can handle the token
-      const loginUrl = `${this.frontendUrl}/auth/login`;
+      // Get the redirectTo URL from session or use the default login page
+      let redirectPage = `${this.frontendUrl}/auth/callback`;
+      
+      // Check if we have a stored redirectTo URL
+      if (req.session?.redirectTo) {
+        redirectPage = req.session.redirectTo;
+        this.logger.log(`Using stored redirect URL: ${redirectPage}`);
+        // Clear the session storage
+        delete req.session.redirectTo;
+      } else {
+        this.logger.log(`No stored redirect URL, using default: ${redirectPage}`);
+      }
       
       // Add token and user data to the redirect URL
-      const finalRedirectUrl = `${loginUrl}?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
+      const finalRedirectUrl = `${redirectPage}?token=${access_token}&googleUser=${encodeURIComponent(JSON.stringify(user))}&source=google`;
       
       this.logger.log(`Redirecting to: ${finalRedirectUrl}`);
       return res.redirect(finalRedirectUrl);
