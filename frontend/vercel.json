@@ -1,9 +1,9 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "npm run build",
+  "buildCommand": "./vercel-build.sh",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
+  "installCommand": "echo 'Using custom build script instead'",
   "outputDirectory": ".next",
   "regions": ["sfo1"],
   "cleanUrls": true,
