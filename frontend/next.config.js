@@ -14,6 +14,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   // Handle Material UI styles properly
+  transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material'],
   modularizeImports: {
     '@mui/material': {
       transform: '@mui/material/{{member}}',
