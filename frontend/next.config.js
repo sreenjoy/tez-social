@@ -26,14 +26,39 @@ const nextConfig = {
   output: 'standalone',
   // Configure images
   images: {
+    unoptimized: true,
     domains: ['localhost', 'tez-social-production.up.railway.app'],
   },
   // Production source maps
-  productionBrowserSourceMaps: true,
-  // Experimental features
+  productionBrowserSourceMaps: false,
+  distDir: '.next',
+  // Disable experimental features that might cause issues
   experimental: {
-    optimizeCss: true,
-    esmExternals: true,
+    optimizeCss: false,
+    esmExternals: false,
+  },
+  // Add cache control headers
+  async headers() {
+    return [
+      {
+        source: '/:all*(svg|jpg|png)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
   },
 }
 
