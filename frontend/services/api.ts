@@ -1,9 +1,8 @@
 import axios from 'axios';
 import useAuthStore from '../store/authStore';
-import { mockAuthApi } from './mockApi';
 
 // Flag to control whether to use mock API
-const USE_MOCK_API = true; // Set to false when backend is available
+const USE_MOCK_API = false; // Set to false when backend is available
 
 // Get the backend URL from environment variables or use local development URL
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
@@ -115,6 +114,46 @@ export const shouldUseMockApi = () => {
   return USE_MOCK_API;
 };
 
+// Simple mock responses for development only
+const mockResponses = {
+  register: async (userData: any) => {
+    return {
+      user: {
+        id: '1',
+        username: userData.username,
+        email: userData.email
+      },
+      accessToken: 'mock-token'
+    };
+  },
+  login: async () => {
+    return {
+      user: {
+        id: '1',
+        username: 'demo',
+        email: 'demo@example.com'
+      },
+      accessToken: 'mock-token'
+    };
+  },
+  logout: async () => ({ success: true }),
+  getCurrentUser: async () => ({
+    id: '1',
+    username: 'demo',
+    email: 'demo@example.com'
+  }),
+  verifyEmail: async () => ({ success: true }),
+  resendVerification: async () => ({ success: true }),
+  getOnboardingStatus: async () => ({
+    isOnboarded: false,
+    steps: {
+      profileCompleted: false,
+      telegramConnected: false,
+      companyCreated: false
+    }
+  })
+};
+
 // API service for authentication related endpoints
 export const authApi = {
   // Register a new user
@@ -122,7 +161,7 @@ export const authApi = {
     // Use mock API if enabled
     if (shouldUseMockApi()) {
       try {
-        return await mockAuthApi.register(userData);
+        return await mockResponses.register(userData);
       } catch (error: any) {
         throw new Error(error.message || 'Registration failed. Please try again.');
       }
@@ -150,7 +189,7 @@ export const authApi = {
     // Use mock API if enabled
     if (shouldUseMockApi()) {
       try {
-        return await mockAuthApi.login(email, password);
+        return await mockResponses.login();
       } catch (error: any) {
         throw new Error(error.message || 'Failed to login. Please check your credentials.');
       }
@@ -177,7 +216,7 @@ export const authApi = {
   logout: async () => {
     // Use mock API if enabled
     if (shouldUseMockApi()) {
-      return await mockAuthApi.logout();
+      return await mockResponses.logout();
     }
     
     const response = await axiosInstance.post('/auth/logout');
@@ -188,7 +227,7 @@ export const authApi = {
   getCurrentUser: async () => {
     // Use mock API if enabled
     if (shouldUseMockApi()) {
-      return await mockAuthApi.getCurrentUser();
+      return await mockResponses.getCurrentUser();
     }
     
     const response = await axiosInstance.get('/auth/me');
@@ -199,7 +238,7 @@ export const authApi = {
   verifyEmail: async (token: string) => {
     // Use mock API if enabled
     if (shouldUseMockApi()) {
-      return await mockAuthApi.verifyEmail(token);
+      return await mockResponses.verifyEmail();
     }
     
     const response = await axiosInstance.post('/auth/verify-email', { token });
@@ -210,7 +249,7 @@ export const authApi = {
   resendVerification: async (email: string) => {
     // Use mock API if enabled
     if (shouldUseMockApi()) {
-      return await mockAuthApi.resendVerification(email);
+      return await mockResponses.resendVerification();
     }
     
     const response = await axiosInstance.post('/auth/resend-verification', { email });
@@ -221,7 +260,7 @@ export const authApi = {
   getOnboardingStatus: async () => {
     // Use mock API if enabled
     if (shouldUseMockApi()) {
-      return await mockAuthApi.getOnboardingStatus();
+      return await mockResponses.getOnboardingStatus();
     }
     
     const response = await axiosInstance.get('/auth/onboarding-status');
