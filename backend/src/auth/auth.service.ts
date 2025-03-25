@@ -97,13 +97,27 @@ export class AuthService {
       this.logger.warn(`Login failed: Invalid password for user ${loginDto.email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
+    
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      this.logger.warn(`Login failed: Email not verified for user ${loginDto.email}`);
+      throw new UnauthorizedException('Email not verified. Please check your inbox for verification link.');
+    }
 
     // Generate JWT
     const payload = { sub: user._id, email: user.email, role: user.role };
     
     return {
       accessToken: this.jwtService.sign(payload),
-      user: user.toSafeObject(),
+      user: {
+        _id: user._id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        hasCompletedOnboarding: user.hasCompletedOnboarding,
+        lastActive: user.lastActive
+      },
     };
   }
 
@@ -194,7 +208,15 @@ export class AuthService {
   async validateUser(userId: string, email: string): Promise<any> {
     const user = await this.userModel.findById(userId);
     if (user && user.email === email) {
-      return user.toSafeObject();
+      return {
+        _id: user._id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        hasCompletedOnboarding: user.hasCompletedOnboarding,
+        lastActive: user.lastActive
+      };
     }
     return null;
   }
@@ -230,7 +252,15 @@ export class AuthService {
       
       return {
         access_token: this.jwtService.sign(payload),
-        user: user.toSafeObject(),
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified,
+          hasCompletedOnboarding: user.hasCompletedOnboarding,
+          lastActive: user.lastActive
+        },
       };
     } catch (error) {
       this.logger.error(`Token refresh failed: ${error.message}`, error.stack);
