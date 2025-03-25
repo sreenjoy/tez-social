@@ -25,6 +25,25 @@ const RegisterForm: React.FC = () => {
       return;
     }
 
+    // Username validation
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters long');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+      setError('Username can only contain letters, numbers, dots, underscores, and hyphens');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    // Password validation
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
       return;
@@ -42,9 +61,13 @@ const RegisterForm: React.FC = () => {
         password
       });
       setRedirecting(true);
-      router.push('/dashboard');
+      // Wait a bit before redirecting to show success state
+      setTimeout(() => {
+        router.push('/auth/onboarding');
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
+      setRedirecting(false);
     }
   };
 

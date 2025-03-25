@@ -95,16 +95,6 @@ const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
           const response = await authApi.register(userData);
-          const { data } = response;
-          
-          if (!data || !data.userId) {
-            throw new Error('Invalid response from server');
-          }
-          
-          set({ 
-            isLoading: false,
-            error: null
-          });
           
           // After successful registration, try to login
           await get().login(userData.email, userData.password);
@@ -112,7 +102,7 @@ const useAuthStore = create<AuthState>()(
           console.error('Registration error:', error);
           set({ 
             isLoading: false, 
-            error: error.response?.data?.message || 'Registration failed. Please try again.',
+            error: error.message || 'Registration failed. Please try again.',
             isAuthenticated: false,
             user: null,
             token: null

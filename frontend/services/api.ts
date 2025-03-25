@@ -1,4 +1,5 @@
 import axios from 'axios';
+import useAuthStore from '../store/authStore';
 
 // Get the backend URL from environment variables
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
@@ -9,14 +10,16 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Add timeout
+  timeout: 10000,
 });
 
 // Add a request interceptor to include the auth token in requests
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Get the token from localStorage (if we're in a browser environment)
+    // Get the token from both localStorage and Zustand store
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || useAuthStore.getState().token;
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -28,18 +31,64 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Add a response interceptor to handle token expiration and errors
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    // Handle network errors
+    if (!error.response) {
+      return Promise.reject(new Error('Network error. Please check your connection.'));
+    }
+
+    // Handle 401 unauthorized
+    if (error.response.status === 401) {
+      // Clear auth state on unauthorized
+      useAuthStore.getState().logout();
+      // Redirect to login page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
+      return Promise.reject(new Error('Session expired. Please login again.'));
+    }
+
+    // Handle other errors
+    const errorMessage = error.response.data?.message || 'An error occurred. Please try again.';
+    return Promise.reject(new Error(errorMessage));
+  }
+);
+
 // API service for authentication related endpoints
 export const authApi = {
   // Register a new user
   register: async (userData: any) => {
-    const response = await axiosInstance.post('/auth/register', userData);
-    return response.data;
+    try {
+      const response = await axiosInstance.post('/auth/register', userData);
+      if (!response.data) {
+        throw new Error('Invalid response from server');
+      }
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error(error.message || 'Registration failed. Please try again.');
+    }
   },
   
   // Login with email and password
   login: async (email: string, password: string) => {
-    const response = await axiosInstance.post('/auth/login', { email, password });
-    return response.data;
+    try {
+      const response = await axiosInstance.post('/auth/login', { email, password });
+      if (!response.data?.accessToken || !response.data?.user) {
+        throw new Error('Invalid response from server');
+      }
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error(error.message || 'Failed to login. Please check your credentials.');
+    }
   },
   
   // Logout the current user
