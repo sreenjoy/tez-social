@@ -47,28 +47,18 @@ export class AuthService {
       // Hash password
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-      // Generate verification token
-      const verificationToken = uuidv4();
-      const tokenExpiration = new Date();
-      tokenExpiration.setHours(tokenExpiration.getHours() + 24); // Token valid for 24 hours
-
-      // Create new user with verification token
+      // Create new user without verification token and set as already verified
       const newUser = new this.userModel({
         ...registerDto,
         password: hashedPassword,
         email: registerDto.email.toLowerCase(),
-        verificationToken,
-        verificationTokenExpires: tokenExpiration,
-        isEmailVerified: false,
+        isEmailVerified: true, // Auto-verify for now
       });
 
       const savedUser = await newUser.save();
 
-      // Send verification email
-      await this.sendVerificationEmail(savedUser.email, verificationToken);
-
       return {
-        message: 'Registration successful. Please check your email to verify your account.',
+        message: 'Registration successful. You can now log in.',
         userId: savedUser._id,
       };
     } catch (error) {
@@ -108,17 +98,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if email is verified
-    if (!user.isEmailVerified) {
-      this.logger.warn(`Login attempt with unverified email: ${loginDto.email}`);
-      throw new UnauthorizedException('Email not verified. Please check your inbox for verification link.');
-    }
-
     // Generate JWT
     const payload = { sub: user._id, email: user.email, role: user.role };
     
     return {
-      access_token: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload),
       user: user.toSafeObject(),
     };
   }

@@ -11,7 +11,8 @@ import {
   ValidationPipe,
   UsePipes,
   BadRequestException,
-  ForbiddenException
+  ForbiddenException,
+  UnauthorizedException
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -123,26 +124,26 @@ export class AuthController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  @UseGuards(AuthGuard('jwt'))
-  getCurrentUser(@Req() req: any) {
-    return req.user;
-  }
-
-  @Post('verify-email')
-  @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+  async getProfile(@Req() req) {
     try {
-      const result = await this.authService.verifyEmail(verifyEmailDto);
+      const { userId } = req.user;
+      const user = await this.authService.validateUser(userId, req.user.email);
+      
+      if (!user) {
+        throw new UnauthorizedException('Invalid user session');
+      }
+      
       return {
         statusCode: HttpStatus.OK,
         message: 'Success',
-        data: result,
+        data: user,
         timestamp: new Date().toISOString(),
-        path: '/api/auth/verify-email',
+        path: '/api/auth/me',
       };
     } catch (error) {
+      this.logger.error(`Get profile error: ${error.message}`, error.stack);
       this.logger.error(`Email verification error: ${error.message}`, error.stack);
       throw error;
     }
