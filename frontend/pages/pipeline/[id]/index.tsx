@@ -51,7 +51,7 @@ const PipelineDetailPage = () => {
       setIsLoading(true);
       try {
         // Fetch pipeline and stages in parallel
-        const [pipelineData, stagesData] = await Promise.all([
+        const [pipelineData, stagesData]: [Pipeline, Stage[]] = await Promise.all([
           pipelineApi.getPipelineById(id as string),
           pipelineApi.getPipelineStages(id as string)
         ]);
@@ -60,7 +60,7 @@ const PipelineDetailPage = () => {
         setStages(stagesData);
         
         // Fetch deals for each stage
-        const dealsPromises = stagesData.map((stage: Stage) => 
+        const dealsPromises: Promise<{ stageId: string; deals: Deal[] }>[] = stagesData.map(stage => 
           dealApi.getDealsByStage(stage._id)
             .then((stageDeals: Deal[]) => ({ stageId: stage._id, deals: stageDeals }))
         );
