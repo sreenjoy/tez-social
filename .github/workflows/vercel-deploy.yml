@@ -1,10 +1,9 @@
-name: Deploy to Vercel
+name: Deploy to Vercel and Monitor
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   deploy:
@@ -40,26 +39,81 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           cd frontend
-          echo "::group::Vercel Deployment"
-          DEPLOYMENT_URL=$(vercel --prod --token=$VERCEL_TOKEN)
-          echo "::set-output name=url::$DEPLOYMENT_URL"
-          echo "Deployed to: $DEPLOYMENT_URL"
-          echo "::endgroup::"
-          
-      - name: Fetch Vercel Logs
+          DEPLOYMENT_URL=$(vercel --prod --token=$VERCEL_TOKEN --yes)
+          echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to $DEPLOYMENT_URL"
+
+      - name: Get Deployment ID
+        id: get_deployment_id
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          echo "::group::Vercel Deployment Logs"
-          vercel logs --token=$VERCEL_TOKEN ${{ steps.deploy.outputs.url }}
-          echo "::endgroup::"
-          
+          DEPLOYMENT_ID=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=${{ secrets.VERCEL_ORG_ID }}" | jq -r '.deployments[0].uid')
+          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+          echo "Latest deployment ID: $DEPLOYMENT_ID"
+
       - name: Check Deployment Status
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          echo "::group::Deployment Status"
-          vercel inspect --token=$VERCEL_TOKEN ${{ steps.deploy.outputs.url }}
-          echo "::endgroup::" 
+          DEPLOYMENT_ID=${{ steps.get_deployment_id.outputs.DEPLOYMENT_ID }}
+          
+          # Wait for deployment to complete (max 5 minutes)
+          MAX_ATTEMPTS=30
+          COUNT=0
+          DELAY=10
+          
+          echo "Checking deployment status..."
+          
+          while [ $COUNT -lt $MAX_ATTEMPTS ]; do
+            STATUS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID" | jq -r '.readyState')
+            
+            echo "Current status: $STATUS"
+            
+            if [ "$STATUS" = "READY" ]; then
+              echo "✅ Deployment successful!"
+              break
+            elif [ "$STATUS" = "ERROR" ]; then
+              echo "❌ Deployment failed!"
+              
+              # Get error logs
+              LOGS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID/events")
+              echo "Deployment logs:"
+              echo "$LOGS" | jq -r '.events[] | select(.type == "stderr") | .payload'
+              
+              exit 1
+            fi
+            
+            COUNT=$((COUNT + 1))
+            echo "Waiting for deployment to complete... Attempt $COUNT of $MAX_ATTEMPTS"
+            sleep $DELAY
+          done
+          
+          if [ $COUNT -eq $MAX_ATTEMPTS ]; then
+            echo "❌ Deployment timed out!"
+            exit 1
+          fi
+
+      - name: Check website availability
+        run: |
+          # Wait a bit for the deployment to fully propagate
+          sleep 20
+          
+          DEPLOYMENT_URL=${{ steps.deploy.outputs.DEPLOYMENT_URL }}
+          
+          echo "Checking if website is accessible at $DEPLOYMENT_URL"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $DEPLOYMENT_URL)
+          
+          if [ $HTTP_STATUS -eq 200 ]; then
+            echo "✅ Website is accessible (HTTP 200)"
+          else
+            echo "❌ Website returned HTTP status $HTTP_STATUS"
+            echo "Fetching detailed logs..."
+            
+            # Get more detailed logs to diagnose issues
+            DEPLOYMENT_ID=${{ steps.get_deployment_id.outputs.DEPLOYMENT_ID }}
+            LOGS=$(curl -s -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID/events")
+            echo "$LOGS" | jq -r '.events[] | "[\(.date)] \(.type): \(.payload)"'
+            
+            exit 1
+          fi 
