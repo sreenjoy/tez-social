@@ -1,16 +1,19 @@
 export interface User {
   _id: string;
-  email: string;
+  id?: string; // For compatibility with both backend and mock API
   username: string;
+  email: string;
+  fullName?: string;
+  role: string;
   isEmailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isVerified?: boolean; // For compatibility with mock API
   avatar?: string;
   bio?: string;
   location?: string;
   website?: string;
   company?: string;
-  role?: string;
   hasCompletedOnboarding?: boolean;
   lastActive?: string;
+  createdAt?: string;
+  updatedAt?: string;
 } 
