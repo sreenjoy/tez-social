@@ -17,34 +17,39 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Verify files and configurations
+      - name: Verify project structure
         run: |
-          echo "Checking project structure and configuration files..."
+          echo "Project structure:"
           ls -la
+          echo "Root vercel.json:"
           cat vercel.json
-          echo "Checking frontend configuration..."
-          cd frontend
-          ls -la
-          cat next.config.js
-          cat package.json
+          echo "Frontend directory structure:"
+          ls -la frontend
+          echo "Environment setup:"
+          echo "VERCEL_ORG_ID is set: ${{ secrets.VERCEL_ORG_ID != '' }}"
+          echo "VERCEL_PROJECT_ID is set: ${{ secrets.VERCEL_PROJECT_ID != '' }}"
+          echo "VERCEL_TOKEN is set: ${{ secrets.VERCEL_TOKEN != '' }}"
           
-      - name: Install dependencies
+      - name: Install dependencies and build
         run: |
           cd frontend
+          echo "Installing dependencies..."
           npm ci
-          
-      - name: Build project
-        run: |
-          cd frontend
+          echo "Building project..."
           npm run build
+          ls -la .next
           
       - name: Install Vercel CLI
-        run: npm install -g vercel
+        run: |
+          echo "Installing Vercel CLI..."
+          npm install -g vercel
+          vercel --version
         
-      - name: Deploy to Vercel
+      - name: Deploy to Vercel (Debug Mode)
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          vercel --cwd . --token ${VERCEL_TOKEN} --scope ${VERCEL_ORG_ID} --prod 
+          echo "Deploying to Vercel with debug logs..."
+          vercel --debug --token ${VERCEL_TOKEN} --cwd . --confirm --prod 
