@@ -1,7 +1,67 @@
 import React from 'react';
+import { AppProps } from 'next/app';
+import Head from 'next/head';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { CacheProvider, EmotionCache } from '@emotion/react';
+import createEmotionCache from '../utils/createEmotionCache';
 import '../styles/globals.css';
-import type { AppProps } from 'next/app';
+import useAuthStore from '../store/authStore';
+import { useEffect } from 'react';
 
-export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+// Client-side cache for MUI styles
+const clientSideEmotionCache = createEmotionCache();
+
+// Theme definition
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#3f51b5', // Indigo
+    },
+    secondary: {
+      main: '#f50057', // Pink
+    },
+  },
+  typography: {
+    fontFamily: [
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+      '"Apple Color Emoji"',
+      '"Segoe UI Emoji"',
+      '"Segoe UI Symbol"',
+    ].join(','),
+  },
+});
+
+interface MyAppProps extends AppProps {
+  emotionCache?: EmotionCache;
+}
+
+export default function MyApp(props: MyAppProps) {
+  const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
+  const { checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    // Check if the user is authenticated when the app loads
+    checkAuth();
+  }, [checkAuth]);
+
+  return (
+    <CacheProvider value={emotionCache}>
+      <Head>
+        <meta name="viewport" content="initial-scale=1, width=device-width" />
+        <title>Tez Social</title>
+      </Head>
+      <ThemeProvider theme={theme}>
+        {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
+        <CssBaseline />
+        <Component {...pageProps} />
+      </ThemeProvider>
+    </CacheProvider>
+  );
 } 

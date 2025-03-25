@@ -53,6 +53,24 @@ export const authApi = {
     const response = await axiosInstance.get('/auth/me');
     return response.data;
   },
+
+  // Verify email with token
+  verifyEmail: async (token: string) => {
+    const response = await axiosInstance.post('/auth/verify-email', { token });
+    return response.data;
+  },
+
+  // Resend verification email
+  resendVerification: async (email: string) => {
+    const response = await axiosInstance.post('/auth/resend-verification', { email });
+    return response.data;
+  },
+
+  // Get user onboarding status
+  getOnboardingStatus: async () => {
+    const response = await axiosInstance.get('/auth/onboarding-status');
+    return response.data;
+  },
 };
 
 // API service for user related endpoints
@@ -158,6 +176,129 @@ export const telegramApi = {
     const response = await axiosInstance.get(`/telegram/contacts?page=${page}&limit=${limit}`);
     return response.data;
   },
+};
+
+// API service for company related endpoints
+export const companyApi = {
+  // Create a new company
+  createCompany: async (companyData: any) => {
+    const response = await axiosInstance.post('/company', companyData);
+    return response.data;
+  },
+  
+  // Get current user's company
+  getCurrentCompany: async () => {
+    const response = await axiosInstance.get('/company');
+    return response.data;
+  },
+  
+  // Get company by ID
+  getCompanyById: async (companyId: string) => {
+    const response = await axiosInstance.get(`/company/${companyId}`);
+    return response.data;
+  },
+};
+
+// API service for pipeline related endpoints
+export const pipelineApi = {
+  // Get all pipelines for the current user's company
+  getPipelines: async () => {
+    const response = await axiosInstance.get('/pipeline');
+    return response.data;
+  },
+  
+  // Get the default pipeline for the company
+  getDefaultPipeline: async () => {
+    const response = await axiosInstance.get('/pipeline/default');
+    return response.data;
+  },
+  
+  // Get a specific pipeline by ID
+  getPipelineById: async (pipelineId: string) => {
+    const response = await axiosInstance.get(`/pipeline/${pipelineId}`);
+    return response.data;
+  },
+  
+  // Create a new pipeline
+  createPipeline: async (pipelineData: any) => {
+    const response = await axiosInstance.post('/pipeline', pipelineData);
+    return response.data;
+  },
+  
+  // Get all stages for a pipeline
+  getPipelineStages: async (pipelineId: string) => {
+    const response = await axiosInstance.get(`/pipeline/${pipelineId}/stages`);
+    return response.data;
+  },
+  
+  // Create a new stage in a pipeline
+  createStage: async (pipelineId: string, stageData: any) => {
+    const response = await axiosInstance.post(`/pipeline/${pipelineId}/stages`, stageData);
+    return response.data;
+  },
+  
+  // Reorder stages in a pipeline
+  reorderStages: async (pipelineId: string, stageOrder: string[]) => {
+    const response = await axiosInstance.put(`/pipeline/${pipelineId}/stages/reorder`, { order: stageOrder });
+    return response.data;
+  },
+};
+
+// API service for deal related endpoints
+export const dealApi = {
+  // Get deals by stage
+  getDealsByStage: async (stageId: string) => {
+    const response = await axiosInstance.get(`/deal/by-stage/${stageId}`);
+    return response.data;
+  },
+
+  // Get deals by pipeline
+  getDealsByPipeline: async (pipelineId: string) => {
+    const response = await axiosInstance.get(`/deal/by-pipeline/${pipelineId}`);
+    return response.data;
+  },
+
+  // Get deal by ID
+  getDealById: async (id: string) => {
+    const response = await axiosInstance.get(`/deal/${id}`);
+    return response.data;
+  },
+
+  // Create new deal
+  createDeal: async (dealData: any) => {
+    const response = await axiosInstance.post('/deal', dealData);
+    return response.data;
+  },
+
+  // Update deal
+  updateDeal: async (id: string, updateData: any) => {
+    const response = await axiosInstance.put(`/deal/${id}`, updateData);
+    return response.data;
+  },
+
+  // Move deal to stage
+  moveDealToStage: async (id: string, stageId: string) => {
+    const response = await axiosInstance.put(`/deal/${id}/move`, { stageId });
+    return response.data;
+  },
+
+  // Delete deal
+  deleteDeal: async (id: string) => {
+    const response = await axiosInstance.delete(`/deal/${id}`);
+    return response.data;
+  },
+
+  // Get tags by company
+  getTags: async () => {
+    const response = await axiosInstance.get('/deal/tags/company');
+    return response.data;
+  },
+
+  // Create new tag
+  createTag: async (tagData: any) => {
+    const response = await axiosInstance.post('/deal/tags', tagData);
+    return response.data;
+  }
 };
 
 // Default export for the axios instance

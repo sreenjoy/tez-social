@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CompanyModule } from './company/company.module';
+import { PipelineModule } from './pipeline/pipeline.module';
+import { DealModule } from './deal/deal.module';
 
 @Module({
   imports: [
@@ -11,18 +14,16 @@ import { AuthModule } from './auth/auth.module';
       isGlobal: true,
     }),
     MongooseModule.forRootAsync({
-      useFactory: () => {
-        const uri = process.env.MONGODB_URI;
-        if (!uri) {
-          console.error('ERROR: MongoDB URI not defined in environment variables. Database functionality will not work.');
-          return {};
-        }
-        return {
-          uri,
-        };
-      },
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
     }),
     AuthModule,
+    CompanyModule,
+    PipelineModule,
+    DealModule,
   ],
   controllers: [AppController],
   providers: [AppService],

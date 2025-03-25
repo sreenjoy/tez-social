@@ -15,7 +15,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, VerifyEmailDto } from './dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -120,5 +121,64 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   getCurrentUser(@Req() req: any) {
     return req.user;
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    try {
+      const result = await this.authService.verifyEmail(verifyEmailDto);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Success',
+        data: result,
+        timestamp: new Date().toISOString(),
+        path: '/api/auth/verify-email',
+      };
+    } catch (error) {
+      this.logger.error(`Email verification error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(@Body('email') email: string) {
+    try {
+      if (!email) {
+        throw new BadRequestException('Email is required');
+      }
+      
+      const result = await this.authService.resendVerificationEmail(email);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Success',
+        data: result,
+        timestamp: new Date().toISOString(),
+        path: '/api/auth/resend-verification',
+      };
+    } catch (error) {
+      this.logger.error(`Resend verification error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  @Get('onboarding-status')
+  @UseGuards(JwtAuthGuard)
+  async getOnboardingStatus(@Req() req: any) {
+    try {
+      const result = await this.authService.getUserOnboardingStatus(req.user.sub);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Success',
+        data: result,
+        timestamp: new Date().toISOString(),
+        path: '/api/auth/onboarding-status',
+      };
+    } catch (error) {
+      this.logger.error(`Get onboarding status error: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 } 

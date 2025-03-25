@@ -3,6 +3,22 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
+import {
+  Box,
+  CssBaseline,
+  AppBar,
+  Toolbar,
+  Typography,
+  Drawer,
+  IconButton,
+  useMediaQuery,
+  useTheme,
+  Divider
+} from '@mui/material';
+import {
+  Menu as MenuIcon
+} from '@mui/icons-material';
+import DashboardSidebar from './DashboardSidebar';
 
 // Icons
 const HomeIcon = () => (
@@ -35,12 +51,6 @@ const LogoutIcon = () => (
   </svg>
 );
 
-const MenuIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"></path>
-  </svg>
-);
-
 interface SidebarItem {
   name: string;
   path: string;
@@ -62,7 +72,15 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, title = 'Dashboard' }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const drawerWidth = 240;
 
   // Handle logout
   const handleLogout = () => {
@@ -73,157 +91,91 @@ export default function DashboardLayout({ children, title = 'Dashboard' }: Dashb
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <Box sx={{ display: 'flex' }}>
+      <CssBaseline />
       <Head>
         <title>{title} | Tez Social</title>
       </Head>
 
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`} role="dialog" aria-modal="true">
-        {/* Sidebar overlay */}
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" aria-hidden="true" onClick={() => setSidebarOpen(false)}></div>
-
-        {/* Sidebar panel */}
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-indigo-700 text-white">
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className="sr-only">Close sidebar</span>
-              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex-shrink-0 flex items-center px-4">
-              <h1 className="text-xl font-bold">Tez Social</h1>
-            </div>
-            <nav className="mt-5 px-2 space-y-1">
-              {sidebarItems.map((item) => (
-                <Link 
-                  key={item.name} 
-                  href={item.path}
-                  className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
-                    router.pathname === item.path
-                      ? 'bg-indigo-800 text-white'
-                      : 'text-white hover:bg-indigo-600'
-                  }`}
-                >
-                  <div className="mr-4 flex-shrink-0">{item.icon}</div>
-                  {item.name}
-                </Link>
-              ))}
-              <button
-                onClick={handleLogout}
-                className="group flex w-full items-center px-2 py-2 text-base font-medium rounded-md text-white hover:bg-indigo-600"
-              >
-                <div className="mr-4 flex-shrink-0"><LogoutIcon /></div>
-                Logout
-              </button>
-            </nav>
-          </div>
-          
-          <div className="flex-shrink-0 flex border-t border-indigo-800 p-4">
-            <div className="flex-shrink-0 group block">
-              <div className="flex items-center">
-                <div>
-                  <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                    {user?.email?.[0]?.toUpperCase() || '?'}
-                  </div>
-                </div>
-                <div className="ml-3">
-                  <p className="text-base font-medium text-white">
-                    {user?.username || user?.email?.split('@')[0] || 'User'}
-                  </p>
-                  <p className="text-sm font-medium text-indigo-300">
-                    {user?.email || ''}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div className="flex-1 flex flex-col min-h-0 bg-indigo-700">
-          <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <div className="flex items-center flex-shrink-0 px-4">
-              <h1 className="text-xl font-bold text-white">Tez Social</h1>
-            </div>
-            <nav className="mt-5 flex-1 px-2 space-y-1">
-              {sidebarItems.map((item) => (
-                <Link 
-                  key={item.name} 
-                  href={item.path}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    router.pathname === item.path
-                      ? 'bg-indigo-800 text-white'
-                      : 'text-white hover:bg-indigo-600'
-                  }`}
-                >
-                  <div className="mr-3 flex-shrink-0">{item.icon}</div>
-                  {item.name}
-                </Link>
-              ))}
-              <button
-                onClick={handleLogout}
-                className="w-full group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-indigo-600"
-              >
-                <div className="mr-3 flex-shrink-0"><LogoutIcon /></div>
-                Logout
-              </button>
-            </nav>
-          </div>
-          <div className="flex-shrink-0 flex border-t border-indigo-800 p-4">
-            <div className="flex-shrink-0 w-full group block">
-              <div className="flex items-center">
-                <div>
-                  <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                    {user?.email?.[0]?.toUpperCase() || '?'}
-                  </div>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-white">
-                    {user?.username || user?.email?.split('@')[0] || 'User'}
-                  </p>
-                  <p className="text-xs font-medium text-indigo-300">
-                    {user?.email || ''}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="md:pl-64 flex flex-col flex-1">
-        <div className="sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-gray-100">
-          <button
-            type="button"
-            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-            onClick={() => setSidebarOpen(true)}
+      <AppBar
+        position="fixed"
+        sx={{
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
           >
-            <span className="sr-only">Open sidebar</span>
             <MenuIcon />
-          </button>
-        </div>
-        <main className="flex-1">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
-            </div>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4">
-              {children}
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
+          </IconButton>
+          <Typography variant="h6" noWrap component="div">
+            {title}
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      <Box
+        component="nav"
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+      >
+        {/* Mobile drawer */}
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile
+          }}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+        >
+          <Box sx={{ height: 64, display: 'flex', alignItems: 'center', px: 2 }}>
+            <Typography variant="h6" component="div">
+              Tez Social
+            </Typography>
+          </Box>
+          <Divider />
+          <DashboardSidebar />
+        </Drawer>
+
+        {/* Desktop drawer */}
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', md: 'block' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+          open
+        >
+          <Box sx={{ height: 64, display: 'flex', alignItems: 'center', px: 2 }}>
+            <Typography variant="h6" component="div">
+              Tez Social
+            </Typography>
+          </Box>
+          <Divider />
+          <DashboardSidebar />
+        </Drawer>
+      </Box>
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          mt: '64px'
+        }}
+      >
+        {children}
+      </Box>
+    </Box>
   );
 } 

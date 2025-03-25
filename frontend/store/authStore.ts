@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi } from '../services/api';
+import { jwtDecode } from 'jwt-decode';
 
 interface User {
-  id?: string;
-  email?: string;
+  _id: string;
+  email: string;
   username?: string;
-  role?: string;
+  role: 'user' | 'admin';
+  companyId?: string; // Added company association
+  isEmailVerified?: boolean;
   picture?: string;
 }
 
@@ -43,72 +46,64 @@ const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
           
-          const response = await authApi.login(email, password);
-          const { access_token, user } = response.data;
+          const data = await authApi.login(email, password);
           
-          // Store auth data
-          localStorage.setItem('token', access_token);
-          localStorage.setItem('user', JSON.stringify(user));
-          localStorage.setItem('isLoggedIn', 'true');
+          // Store token in localStorage
+          localStorage.setItem('token', data.accessToken);
+          const decodedToken = jwtDecode(data.accessToken) as { userId: string };
           
-          set({
+          // Get user details
+          const userData = await authApi.getCurrentUser();
+          
+          set({ 
             isAuthenticated: true,
-            user,
-            token: access_token,
-            isLoading: false,
-            isInitialized: true
+            user: userData,
+            token: data.accessToken,
+            isLoading: false
           });
           
           return;
         } catch (error: any) {
-          const errorMessage = error?.response?.data?.message || 'Login failed. Please try again.';
-          set({ isLoading: false, error: errorMessage });
-          throw new Error(errorMessage);
+          console.error('Login error:', error);
+          set({ 
+            isLoading: false, 
+            error: error.response?.data?.message || 'Failed to login. Please try again.'
+          });
+          throw error;
         }
       },
       
       // Logout
-      logout: () => {
-        // Clear local storage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('isLoggedIn');
-        
-        // Reset state
-        set({
-          isAuthenticated: false,
-          user: null,
-          token: null,
-          isInitialized: true
-        });
+      logout: async () => {
+        try {
+          // Call logout API to invalidate token on server
+          await authApi.logout();
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          // Clear token from localStorage
+          localStorage.removeItem('token');
+          set({ 
+            isAuthenticated: false, 
+            user: null, 
+            token: null
+          });
+        }
       },
       
       // Register a new user
       register: async (userData) => {
         try {
           set({ isLoading: true, error: null });
-          
-          const response = await authApi.register(userData);
-          const { access_token, user } = response.data;
-          
-          // Store auth data
-          localStorage.setItem('token', access_token);
-          localStorage.setItem('user', JSON.stringify(user));
-          localStorage.setItem('isLoggedIn', 'true');
-          
-          set({
-            isAuthenticated: true,
-            user,
-            token: access_token,
-            isLoading: false,
-            isInitialized: true
-          });
-          
-          return;
+          await authApi.register(userData);
+          set({ isLoading: false });
         } catch (error: any) {
-          const errorMessage = error?.response?.data?.message || 'Registration failed. Please try again.';
-          set({ isLoading: false, error: errorMessage });
-          throw new Error(errorMessage);
+          console.error('Registration error:', error);
+          set({ 
+            isLoading: false, 
+            error: error.response?.data?.message || 'Registration failed. Please try again.'
+          });
+          throw error;
         }
       },
       
@@ -125,24 +120,34 @@ const useAuthStore = create<AuthState>()(
       // Check if token is valid
       checkAuth: async () => {
         try {
-          // Get the current auth state
-          const { token } = get();
+          set({ isLoading: true });
+          const storedToken = localStorage.getItem('token');
           
-          // If no token, we're not authenticated
-          if (!token) {
-            set({ isAuthenticated: false, isInitialized: true });
+          if (!storedToken) {
+            set({ isAuthenticated: false, isLoading: false });
             return false;
           }
           
-          // Verify token with backend
-          await authApi.getCurrentUser();
+          // Verify token is valid by fetching current user
+          const userData = await authApi.getCurrentUser();
           
-          // If we get here, token is valid
-          set({ isAuthenticated: true, isInitialized: true });
+          set({ 
+            isAuthenticated: true,
+            user: userData,
+            token: storedToken,
+            isLoading: false
+          });
           return true;
         } catch (error) {
-          // Token invalid or expired
-          set({ isAuthenticated: false, isInitialized: true });
+          console.error('Auth check error:', error);
+          // If token is invalid, clear it
+          localStorage.removeItem('token');
+          set({ 
+            isAuthenticated: false, 
+            user: null, 
+            token: null,
+            isLoading: false
+          });
           return false;
         }
       }
