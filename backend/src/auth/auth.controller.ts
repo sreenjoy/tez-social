@@ -10,13 +10,15 @@ import {
   HttpCode,
   ValidationPipe,
   UsePipes,
-  BadRequestException
+  BadRequestException,
+  ForbiddenException
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, VerifyEmailDto } from './dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { BypassVerificationDto } from './dto/bypass-verification.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -178,6 +180,30 @@ export class AuthController {
       };
     } catch (error) {
       this.logger.error(`Get onboarding status error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  // Development-only endpoint to bypass email verification
+  @Post('dev-bypass-verification')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async bypassVerification(@Body() bypassDto: BypassVerificationDto) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('This endpoint is not available in production');
+    }
+    
+    try {
+      const result = await this.authService.bypassEmailVerification(bypassDto.email);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Success',
+        data: result,
+        timestamp: new Date().toISOString(),
+        path: '/api/auth/dev-bypass-verification',
+      };
+    } catch (error) {
+      this.logger.error(`Bypass verification error: ${error.message}`, error.stack);
       throw error;
     }
   }
