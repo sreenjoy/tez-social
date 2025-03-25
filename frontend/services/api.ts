@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Get the backend URL from environment variables
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://tez-social-production.up.railway.app';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 // Create a custom axios instance for our API
 const axiosInstance = axios.create({

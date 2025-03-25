@@ -46,28 +46,37 @@ const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
           
-          const data = await authApi.login(email, password);
+          const response = await authApi.login(email, password);
+          const { data } = response;
+          
+          if (!data || !data.accessToken) {
+            throw new Error('Invalid response from server');
+          }
           
           // Store token in localStorage
           localStorage.setItem('token', data.accessToken);
-          const decodedToken = jwtDecode(data.accessToken) as { userId: string };
+          localStorage.setItem('isLoggedIn', 'true');
           
-          // Get user details
-          const userData = await authApi.getCurrentUser();
+          // Store user data
+          if (data.user) {
+            localStorage.setItem('user', JSON.stringify(data.user));
+          }
           
           set({ 
             isAuthenticated: true,
-            user: userData,
+            user: data.user,
             token: data.accessToken,
-            isLoading: false
+            isLoading: false,
+            error: null
           });
-          
-          return;
         } catch (error: any) {
           console.error('Login error:', error);
           set({ 
             isLoading: false, 
-            error: error.response?.data?.message || 'Failed to login. Please try again.'
+            error: error.response?.data?.message || 'Failed to login. Please try again.',
+            isAuthenticated: false,
+            user: null,
+            token: null
           });
           throw error;
         }
@@ -83,6 +92,8 @@ const useAuthStore = create<AuthState>()(
         } finally {
           // Clear token from localStorage
           localStorage.removeItem('token');
+          localStorage.removeItem('isLoggedIn');
+          localStorage.removeItem('user');
           set({ 
             isAuthenticated: false, 
             user: null, 
@@ -95,13 +106,28 @@ const useAuthStore = create<AuthState>()(
       register: async (userData) => {
         try {
           set({ isLoading: true, error: null });
-          await authApi.register(userData);
-          set({ isLoading: false });
+          const response = await authApi.register(userData);
+          const { data } = response;
+          
+          if (!data || !data.userId) {
+            throw new Error('Invalid response from server');
+          }
+          
+          set({ 
+            isLoading: false,
+            error: null
+          });
+          
+          // After successful registration, try to login
+          await get().login(userData.email, userData.password);
         } catch (error: any) {
           console.error('Registration error:', error);
           set({ 
             isLoading: false, 
-            error: error.response?.data?.message || 'Registration failed. Please try again.'
+            error: error.response?.data?.message || 'Registration failed. Please try again.',
+            isAuthenticated: false,
+            user: null,
+            token: null
           });
           throw error;
         }
@@ -142,6 +168,8 @@ const useAuthStore = create<AuthState>()(
           console.error('Auth check error:', error);
           // If token is invalid, clear it
           localStorage.removeItem('token');
+          localStorage.removeItem('isLoggedIn');
+          localStorage.removeItem('user');
           set({ 
             isAuthenticated: false, 
             user: null, 
