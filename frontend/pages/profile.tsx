@@ -7,7 +7,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, setUser } = useAuthStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -43,18 +43,15 @@ export default function ProfilePage() {
       // Only send fields that have been changed
       const dataToUpdate: Record<string, string> = {};
       if (formData.username !== user?.username) dataToUpdate.username = formData.username;
-      
-      // Email is readonly for now, can be enabled if needed
-      // if (formData.email !== user?.email) dataToUpdate.email = formData.email;
 
       // Only make API call if there are changes
-      if (Object.keys(dataToUpdate).length > 0 && user?.id) {
-        await userApi.updateProfile(user.id, dataToUpdate);
+      if (Object.keys(dataToUpdate).length > 0 && user?._id) {
+        await userApi.updateProfile(user._id, dataToUpdate);
         setSuccessMessage('Profile updated successfully');
         
-        // We should refresh user data here if we had a getCurrentUser endpoint
-        // For now, we'll just update the local state
-        setIsEditing(false);
+        // Refresh user data
+        const updatedUser = await userApi.getProfile(user._id);
+        setUser(updatedUser);
       } else {
         setSuccessMessage('No changes were made');
         setIsEditing(false);
@@ -103,7 +100,7 @@ export default function ProfilePage() {
             <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-6 gap-6">
-                  <div className="col-span-6 sm:col-span-4">
+                  <div className="col-span-6 sm:col-span-3">
                     <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                       Username
                     </label>
@@ -117,9 +114,9 @@ export default function ProfilePage() {
                     />
                   </div>
 
-                  <div className="col-span-6 sm:col-span-4">
+                  <div className="col-span-6 sm:col-span-3">
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email address
+                      Email
                     </label>
                     <input
                       type="email"
@@ -127,9 +124,8 @@ export default function ProfilePage() {
                       id="email"
                       value={formData.email}
                       disabled
-                      className="mt-1 bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                      className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-gray-50"
                     />
-                    <p className="mt-1 text-xs text-gray-500">Email address cannot be changed</p>
                   </div>
                 </div>
                 
@@ -166,22 +162,18 @@ export default function ProfilePage() {
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Username</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {formData.username}
+                    {user ? user.username : 'N/A'}
                   </dd>
                 </div>
                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Email address</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formData.email}</dd>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{user?.email || 'N/A'}</dd>
                 </div>
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Role</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                     {user?.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'User'}
                   </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Account ID</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{user?.id || 'N/A'}</dd>
                 </div>
               </dl>
             </div>
