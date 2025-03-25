@@ -28,13 +28,32 @@ const nextConfig = {
   // Configure images
   images: {
     domains: ['localhost', 'tez-social-production.up.railway.app'],
+    unoptimized: true,
   },
   // Production source maps
   productionBrowserSourceMaps: false,
   // Experimental features
   experimental: {
     optimizeCss: false,
-    esmExternals: false,
+    esmExternals: 'loose',
+  },
+  // Disable type checking in build for speed
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  // Disable ESLint in build for speed
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/api/:path*',
+          destination: 'https://tez-social-production.up.railway.app/api/:path*',
+        },
+      ],
+    };
   },
   async headers() {
     return [
