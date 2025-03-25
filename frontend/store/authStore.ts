@@ -5,6 +5,7 @@ import { authApi } from '../services/api';
 interface User {
   id?: string;
   email?: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   role?: string;
@@ -17,6 +18,7 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   error: string | null;
+  isInitialized: boolean;
   
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -36,6 +38,7 @@ const useAuthStore = create<AuthState>()(
       token: null,
       isLoading: false,
       error: null,
+      isInitialized: false,
       
       // Login with email and password
       login: async (email, password) => {
@@ -55,7 +58,11 @@ const useAuthStore = create<AuthState>()(
             user,
             token: access_token,
             isLoading: false,
+            isInitialized: true
           });
+          
+          // No navigation here - let the component handle it
+          return;
         } catch (error: any) {
           const errorMessage = error?.response?.data?.message || 'Login failed. Please try again.';
           set({ isLoading: false, error: errorMessage });
@@ -75,12 +82,10 @@ const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           user: null,
           token: null,
+          isInitialized: true
         });
         
-        // Redirect to login (if in browser)
-        if (typeof window !== 'undefined') {
-          window.location.href = '/auth/login';
-        }
+        // No navigation here - let the component handle it
       },
       
       // Register a new user
@@ -101,7 +106,11 @@ const useAuthStore = create<AuthState>()(
             user,
             token: access_token,
             isLoading: false,
+            isInitialized: true
           });
+          
+          // No navigation here - let the component handle it
+          return;
         } catch (error: any) {
           const errorMessage = error?.response?.data?.message || 'Registration failed. Please try again.';
           set({ isLoading: false, error: errorMessage });
@@ -127,7 +136,7 @@ const useAuthStore = create<AuthState>()(
           
           // If no token, we're not authenticated
           if (!token) {
-            set({ isAuthenticated: false });
+            set({ isAuthenticated: false, isInitialized: true });
             return false;
           }
           
@@ -135,11 +144,11 @@ const useAuthStore = create<AuthState>()(
           await authApi.getCurrentUser();
           
           // If we get here, token is valid
-          set({ isAuthenticated: true });
+          set({ isAuthenticated: true, isInitialized: true });
           return true;
         } catch (error) {
           // Token invalid or expired
-          set({ isAuthenticated: false });
+          set({ isAuthenticated: false, isInitialized: true });
           return false;
         }
       }
@@ -157,6 +166,9 @@ const useAuthStore = create<AuthState>()(
 
 // Initialize auth state from localStorage (client-side only)
 if (typeof window !== 'undefined') {
+  // Add some logging for debugging
+  console.log('Initializing auth store from localStorage');
+  
   const token = localStorage.getItem('token');
   const userString = localStorage.getItem('user');
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -165,14 +177,18 @@ if (typeof window !== 'undefined') {
     try {
       const user = userString ? JSON.parse(userString) : null;
       
+      console.log('Found auth data in localStorage', { token: !!token, user: !!user });
+      
       useAuthStore.getState().setAuthState({
         isAuthenticated: true,
         user,
         token,
+        isInitialized: true
       });
       
       // Verify token in background
       useAuthStore.getState().checkAuth().then((isValid) => {
+        console.log('Background token verification result:', isValid);
         if (!isValid) {
           useAuthStore.getState().logout();
         }
@@ -183,7 +199,19 @@ if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('isLoggedIn');
+      
+      useAuthStore.getState().setAuthState({
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        isInitialized: true
+      });
     }
+  } else {
+    console.log('No auth data found in localStorage');
+    useAuthStore.getState().setAuthState({
+      isInitialized: true
+    });
   }
 }
 

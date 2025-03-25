@@ -14,11 +14,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     // If already authenticated, redirect to dashboard
-    if (isAuthenticated) {
-      window.location.href = REDIRECT_AFTER_LOGIN;
+    if (isAuthenticated && !redirecting) {
+      console.log("Login page: User is authenticated, redirecting to dashboard");
+      setRedirecting(true);
+      router.push(REDIRECT_AFTER_LOGIN);
     }
     
     // Show auth store errors
@@ -26,16 +29,20 @@ export default function LoginPage() {
       setError(authError);
       clearError();
     }
-  }, [isAuthenticated, authError, clearError]);
+  }, [isAuthenticated, authError, clearError, router, redirecting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
     try {
+      console.log("Login page: Attempting login with email", email);
       await login(email, password);
-      window.location.href = REDIRECT_AFTER_LOGIN;
+      console.log("Login page: Login successful, redirecting");
+      setRedirecting(true);
+      router.push(REDIRECT_AFTER_LOGIN);
     } catch (err: any) {
+      console.error("Login page: Login failed", err);
       setError(err.message || 'Failed to login. Please check your credentials.');
     }
   };
@@ -94,10 +101,10 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || redirecting}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Signing in...' : redirecting ? 'Redirecting...' : 'Sign in'}
             </button>
           </div>
           

@@ -21,11 +21,22 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const router = useRouter();
-  const { isAuthenticated, isInitialized, isLoading, checkAuth } = useAuthStore();
+  const { isAuthenticated, isInitialized, token, checkAuth } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [debugLogs, setDebugLogs] = useState<any[]>([]);
+
+  // Log auth state for debugging
+  useEffect(() => {
+    console.log('ProtectedRoute: Auth state', { 
+      isAuthenticated, 
+      isInitialized,
+      isChecking,
+      hasToken: !!token
+    });
+  }, [isAuthenticated, isInitialized, isChecking, token]);
 
   // Load debug logs from localStorage when debug view is opened
   useEffect(() => {
@@ -44,44 +55,48 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     const verifyAuth = async () => {
       try {
         console.log("ProtectedRoute: Verifying authentication");
+        
+        // Wait for auth store to be initialized
+        if (!isInitialized) {
+          console.log("ProtectedRoute: Waiting for auth store to initialize");
+          return;
+        }
+        
+        if (!isAuthenticated && !token) {
+          console.log("ProtectedRoute: No authentication found, redirecting to login");
+          if (!redirecting) {
+            setRedirecting(true);
+            router.replace('/auth/login');
+          }
+          return;
+        }
+        
         // Check auth status using the store method
         const isAuthorized = await checkAuth();
         console.log("ProtectedRoute: Auth check result:", isAuthorized);
         
         if (!isAuthorized) {
           console.log("ProtectedRoute: Not authorized, redirecting to login");
-          // Redirect to login page if not authenticated
-          router.replace('/auth/login');
+          if (!redirecting) {
+            setRedirecting(true);
+            router.replace('/auth/login');
+          }
         } else {
           console.log("ProtectedRoute: User is authenticated");
+          setIsChecking(false);
         }
       } catch (error) {
         console.error("ProtectedRoute: Auth verification error", error);
-        // On error, redirect to login
-        router.replace('/auth/login');
-      } finally {
-        // Finish checking regardless of result
-        setIsChecking(false);
+        setError("Authentication verification failed");
+        if (!redirecting) {
+          setRedirecting(true);
+          router.replace('/auth/login');
+        }
       }
     };
 
-    // Only run verification if auth state isn't initialized yet
-    if (!isInitialized) {
-      verifyAuth();
-    } else {
-      // If already initialized, just check the current state
-      console.log("ProtectedRoute: Auth already initialized:", { isAuthenticated });
-      
-      if (!isAuthenticated) {
-        console.log("ProtectedRoute: Not authenticated, redirecting to login");
-        router.replace('/auth/login');
-      } else {
-        console.log("ProtectedRoute: User is authenticated");
-      }
-      
-      setIsChecking(false);
-    }
-  }, [router, isAuthenticated, isInitialized, checkAuth]);
+    verifyAuth();
+  }, [router, isAuthenticated, isInitialized, token, checkAuth, redirecting]);
 
   // Function to clear all auth data for testing
   const handleClearAuth = () => {
@@ -106,7 +121,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
           
           <div className="flex justify-between">
             <button
-              onClick={() => window.location.href = '/auth/login'}
+              onClick={() => router.push('/auth/login')}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
               Go to Login
@@ -153,10 +168,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // Show loading state while checking auth
-  if (isChecking || isLoading) {
+  if (isChecking) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="large" />
+        <div className="text-center">
+          <LoadingSpinner size="large" />
+          <p className="mt-4 text-gray-600">Verifying your authentication...</p>
+        </div>
       </div>
     );
   }

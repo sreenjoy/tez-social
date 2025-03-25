@@ -13,11 +13,14 @@ const RegisterPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState('');
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     // If already authenticated, redirect to dashboard
-    if (isAuthenticated) {
-      window.location.href = '/dashboard';
+    if (isAuthenticated && !redirecting) {
+      console.log("Register page: User is authenticated, redirecting to dashboard");
+      setRedirecting(true);
+      router.push('/dashboard');
     }
     
     // Show auth store errors
@@ -25,7 +28,7 @@ const RegisterPage = () => {
       setFormError(authError);
       clearError();
     }
-  }, [isAuthenticated, authError, clearError]);
+  }, [isAuthenticated, authError, clearError, router, redirecting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,14 +51,17 @@ const RegisterPage = () => {
     }
 
     try {
+      console.log("Register page: Attempting registration with email", email);
       await register({
         username,
         email,
         password
       });
-      // Directly redirect after successful registration
-      window.location.href = '/dashboard';
+      console.log("Register page: Registration successful, redirecting");
+      setRedirecting(true);
+      router.push('/dashboard');
     } catch (err: any) {
+      console.error("Register page: Registration failed", err);
       setFormError(err.message || 'Registration failed. Please try again.');
     }
   };
@@ -134,9 +140,10 @@ const RegisterPage = () => {
           
           <button
             type="submit"
+            disabled={redirecting}
             className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-600 transition duration-200"
           >
-            Sign Up
+            {redirecting ? 'Redirecting...' : 'Sign Up'}
           </button>
         </form>
         
