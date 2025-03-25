@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import useAuthStore from '../../store/authStore';
 import { companyApi } from '../../services/api';
+import { SelectChangeEvent } from '@mui/material/Select';
 
 // Define the enum values matching the backend
 const teamSizes = [
@@ -56,7 +57,7 @@ export default function OnboardingPage() {
   const { user, isAuthenticated } = useAuthStore();
   
   const [formData, setFormData] = useState({
-    ownerFullName: user?.username || '',
+    ownerFullName: user ? `${user.firstName} ${user.lastName}` : '',
     name: '',
     url: '',
     teamSize: '',
@@ -78,12 +79,14 @@ export default function OnboardingPage() {
     }
   }, [isAuthenticated, router]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>
+  ) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name as string]: value,
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
     
     // Clear error when field is updated
     if (errors[name as string]) {
