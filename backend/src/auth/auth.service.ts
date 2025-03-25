@@ -98,12 +98,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     
-    // Check if email is verified
-    if (!user.isEmailVerified) {
-      this.logger.warn(`Login failed: Email not verified for user ${loginDto.email}`);
-      throw new UnauthorizedException('Email not verified. Please check your inbox for verification link.');
-    }
-
     // Generate JWT
     const payload = { sub: user._id, email: user.email, role: user.role };
     
