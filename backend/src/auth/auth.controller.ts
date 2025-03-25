@@ -18,7 +18,6 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, VerifyEmailDto } from './dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { BypassVerificationDto } from './dto/bypass-verification.dto';
 
 @Controller('auth')
 export class AuthController {
