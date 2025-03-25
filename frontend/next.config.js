@@ -7,7 +7,7 @@ const nextConfig = {
   poweredByHeader: false,
   // Ensure proper environment variable handling
   env: {
-    NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'https://tez-social-production.up.railway.app',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
   // Optimize for production
   compiler: {
@@ -24,18 +24,17 @@ const nextConfig = {
     },
   },
   // Optimize output
-  output: 'standalone',
+  output: 'export',
   // Configure images
   images: {
-    domains: ['localhost', 'tez-social-production.up.railway.app'],
+    domains: ['example.com'],
     unoptimized: true,
   },
   // Production source maps
   productionBrowserSourceMaps: false,
   // Experimental features
   experimental: {
-    optimizeCss: false,
-    esmExternals: 'loose',
+    optimizeFonts: true,
   },
   // Disable type checking in build for speed
   typescript: {
@@ -77,6 +76,8 @@ const nextConfig = {
       },
     ];
   },
+  distDir: 'out',
+  trailingSlash: true,
 }
 
 module.exports = nextConfig 

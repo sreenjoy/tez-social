@@ -4,8 +4,8 @@ import useAuthStore from '../store/authStore';
 // Flag to control whether to use mock API
 const USE_MOCK_API = false; // Set to false when backend is available
 
-// Get the backend URL from environment variables or use local development URL
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+// Get the backend URL from environment variables
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tez-social-backend.vercel.app';
 
 // Create a custom axios instance for our API
 const axiosInstance = axios.create({

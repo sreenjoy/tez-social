@@ -13,12 +13,11 @@ on:
         default: '1'
 
 jobs:
-  deploy:
+  deploy-backend:
     runs-on: ubuntu-latest
     outputs:
-      deployment_url: ${{ steps.deployment_info.outputs.deployment_url }}
-      deployment_id: ${{ steps.get_deployment_id.outputs.deployment_id }}
-      deployment_status: ${{ steps.check_deployment.outputs.status }}
+      backend_url: ${{ steps.backend_deploy.outputs.url }}
+      backend_deployment_id: ${{ steps.get_backend_deployment_id.outputs.deployment_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,163 +27,155 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Verify project structure
+      - name: Install dependencies
         run: |
-          echo "Project structure:"
-          ls -la
-          echo "Root vercel.json:"
-          cat vercel.json
-          echo "Frontend directory structure:"
-          ls -la frontend
-          echo "Environment setup:"
-          echo "VERCEL_ORG_ID is set: ${{ secrets.VERCEL_ORG_ID != '' }}"
-          echo "VERCEL_PROJECT_ID is set: ${{ secrets.VERCEL_PROJECT_ID != '' }}"
-          echo "VERCEL_TOKEN is set: ${{ secrets.VERCEL_TOKEN != '' }}"
-          
-      - name: Install dependencies and build
-        id: build
-        run: |
-          cd frontend
-          echo "Installing dependencies..."
+          cd backend
           npm ci
-          echo "Building project..."
-          npm run build || (echo "::set-output name=build_failed::true" && exit 1)
-          ls -la .next
-          echo "::set-output name=build_failed::false"
-          
-      - name: Install Vercel CLI
+
+      - name: Build backend
         run: |
-          echo "Installing Vercel CLI..."
-          npm install -g vercel
-          vercel --version
-        
-      - name: Deploy to Vercel
-        id: deploy
+          cd backend
+          npm run build
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy backend to Vercel
+        id: backend_deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+          # Set environment variables for backend
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
-          echo "Deploying to Vercel with debug logs..."
-          DEPLOY_OUTPUT=$(vercel --debug --token ${VERCEL_TOKEN} --cwd . --confirm --prod 2>&1)
+          cd backend
+          echo "Deploying backend to Vercel with debug logs..."
+          DEPLOY_OUTPUT=$(vercel --debug --token ${VERCEL_TOKEN} --prod --yes 2>&1)
           echo "$DEPLOY_OUTPUT"
           
           # Extract deployment URL from output
           DEPLOYMENT_URL=$(echo "$DEPLOY_OUTPUT" | grep -o 'https://[a-zA-Z0-9.-]*\.vercel\.app' | head -1 || echo "")
           if [ -z "$DEPLOYMENT_URL" ]; then
-            echo "::error::Failed to extract deployment URL"
+            echo "Failed to extract backend deployment URL"
             exit 1
           fi
+          echo "Backend deployed to: $DEPLOYMENT_URL"
           echo "::set-output name=url::$DEPLOYMENT_URL"
-          echo "Deployed to: $DEPLOYMENT_URL"
-      
-      - name: Get deployment info
-        id: deployment_info
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          DEPLOYMENT_URL=${{ steps.deploy.outputs.url }}
-          echo "::set-output name=deployment_url::$DEPLOYMENT_URL"
-          echo "Deployment URL: $DEPLOYMENT_URL"
-
-      - name: Get Deployment ID
-        id: get_deployment_id
+          
+      - name: Get backend deployment ID
+        id: get_backend_deployment_id
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
         run: |
-          # Sleep to allow deployment to be registered in Vercel
           sleep 5
-          echo "Fetching latest deployment ID..."
-          DEPLOYMENT_ID=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID" | jq -r '.deployments[0].uid')
+          echo "Fetching latest backend deployment ID..."
+          DEPLOYMENT_ID=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=${{ secrets.VERCEL_BACKEND_PROJECT_ID }}" | jq -r '.deployments[0].uid')
           echo "::set-output name=deployment_id::$DEPLOYMENT_ID"
-          echo "Latest deployment ID: $DEPLOYMENT_ID"
+          echo "Latest backend deployment ID: $DEPLOYMENT_ID"
 
-      - name: Check deployment status
-        id: check_deployment
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_url: ${{ steps.frontend_deploy.outputs.url }}
+      frontend_deployment_id: ${{ steps.get_frontend_deployment_id.outputs.deployment_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Set backend URL in frontend environment
+        run: |
+          cd frontend
+          echo "NEXT_PUBLIC_API_URL=${{ needs.deploy-backend.outputs.backend_url }}" > .env.production
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy frontend to Vercel
+        id: frontend_deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          DEPLOYMENT_ID=${{ steps.get_deployment_id.outputs.deployment_id }}
+          cd frontend
+          echo "Deploying frontend to Vercel with debug logs..."
+          DEPLOY_OUTPUT=$(vercel --debug --token ${VERCEL_TOKEN} --prod --yes 2>&1)
+          echo "$DEPLOY_OUTPUT"
           
-          # Wait for deployment to complete (max 2 minutes)
-          MAX_ATTEMPTS=12
-          COUNT=0
-          DELAY=10
-          STATUS="UNKNOWN"
-          
-          echo "Checking deployment status for ID: $DEPLOYMENT_ID"
-          
-          while [ $COUNT -lt $MAX_ATTEMPTS ]; do
-            RESPONSE=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID")
-            STATUS=$(echo "$RESPONSE" | jq -r '.readyState')
-            
-            echo "Current status: $STATUS"
-            
-            if [ "$STATUS" = "READY" ]; then
-              echo "✅ Deployment successful!"
-              echo "::set-output name=status::success"
-              break
-            elif [ "$STATUS" = "ERROR" ]; then
-              echo "❌ Deployment failed!"
-              echo "::set-output name=status::failed"
-              
-              # Get error logs
-              LOGS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID/events")
-              echo "Deployment logs:"
-              echo "$LOGS" | jq '.events[] | select(.type == "stderr" or .type == "error") | .payload'
-              
-              break
-            fi
-            
-            COUNT=$((COUNT + 1))
-            echo "Waiting for deployment to complete... Attempt $COUNT of $MAX_ATTEMPTS"
-            sleep $DELAY
-          done
-          
-          if [ $COUNT -eq $MAX_ATTEMPTS ]; then
-            echo "⚠️ Deployment check timed out!"
-            echo "::set-output name=status::timeout"
+          # Extract deployment URL from output
+          DEPLOYMENT_URL=$(echo "$DEPLOY_OUTPUT" | grep -o 'https://[a-zA-Z0-9.-]*\.vercel\.app' | head -1 || echo "")
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "Failed to extract frontend deployment URL"
+            exit 1
           fi
+          echo "Frontend deployed to: $DEPLOYMENT_URL"
+          echo "::set-output name=url::$DEPLOYMENT_URL"
+          
+      - name: Get frontend deployment ID
+        id: get_frontend_deployment_id
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        run: |
+          sleep 5
+          echo "Fetching latest frontend deployment ID..."
+          DEPLOYMENT_ID=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=${{ secrets.VERCEL_PROJECT_ID }}" | jq -r '.deployments[0].uid')
+          echo "::set-output name=deployment_id::$DEPLOYMENT_ID"
+          echo "Latest frontend deployment ID: $DEPLOYMENT_ID"
 
   check-deployment:
-    needs: deploy
+    needs: [deploy-backend, deploy-frontend]
     runs-on: ubuntu-latest
     steps:
-      - name: Check deployment status and verify site
-        id: verify
+      - name: Check deployment status
         run: |
-          DEPLOYMENT_STATUS="${{ needs.deploy.outputs.deployment_status }}"
-          DEPLOYMENT_URL="${{ needs.deploy.outputs.deployment_url }}"
+          echo "Backend URL: ${{ needs.deploy-backend.outputs.backend_url }}"
+          echo "Frontend URL: ${{ needs.deploy-frontend.outputs.frontend_url }}"
           
-          echo "Deployment status: $DEPLOYMENT_STATUS"
-          echo "Deployment URL: $DEPLOYMENT_URL"
+          # Wait a bit for deployment to propagate
+          sleep 10
           
-          if [ "$DEPLOYMENT_STATUS" = "success" ]; then
-            echo "✅ Deployment was successful. Testing the site..."
-            
-            # Wait a bit for deployment to propagate
-            sleep 10
-            
-            # Test if the site is accessible
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $DEPLOYMENT_URL)
-            
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "✅ Site is accessible (HTTP 200)"
-              echo "::set-output name=site_accessible::true"
-            else
-              echo "⚠️ Site returned HTTP status $HTTP_STATUS"
-              echo "::set-output name=site_accessible::false"
-            fi
+          # Test if the frontend is accessible
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ needs.deploy-frontend.outputs.frontend_url }})
+          if [ "$FRONTEND_STATUS" = "200" ]; then
+            echo "✅ Frontend is accessible (HTTP 200)"
           else
-            echo "❌ Deployment was not successful."
-            echo "::set-output name=site_accessible::false"
+            echo "⚠️ Frontend returned HTTP status $FRONTEND_STATUS"
           fi
-      
-      - name: Trigger auto-fix workflow if needed
-        if: steps.verify.outputs.site_accessible == 'false'
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: auto-fix.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{"deployment_id": "${{ needs.deploy.outputs.deployment_id }}", "deployment_url": "${{ needs.deploy.outputs.deployment_url }}"}' 
+          
+          # Test if the backend is accessible
+          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ needs.deploy-backend.outputs.backend_url }})
+          if [ "$BACKEND_STATUS" = "200" ]; then
+            echo "✅ Backend is accessible (HTTP $BACKEND_STATUS)"
+          else
+            echo "⚠️ Backend returned HTTP status $BACKEND_STATUS"
+          fi
+          
+      - name: Create deployment summary
+        run: |
+          echo "## Deployment Summary" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 **Frontend**: [${{ needs.deploy-frontend.outputs.frontend_url }}](${{ needs.deploy-frontend.outputs.frontend_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- 🖥️ **Backend**: [${{ needs.deploy-backend.outputs.backend_url }}](${{ needs.deploy-backend.outputs.backend_url }})" >> $GITHUB_STEP_SUMMARY 
