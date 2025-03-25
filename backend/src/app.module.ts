@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CommonModule } from './common/common.module';
 import { CompanyModule } from './company/company.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { DealModule } from './deal/deal.module';
@@ -20,6 +21,7 @@ import { DealModule } from './deal/deal.module';
         uri: configService.get<string>('MONGODB_URI'),
       }),
     }),
+    CommonModule,
     AuthModule,
     CompanyModule,
     PipelineModule,

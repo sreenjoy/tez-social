@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { User } from './schemas/user.schema';
 import { RegisterDto, LoginDto, VerifyEmailDto } from './dto';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from '../common/services/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,8 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private jwtService: JwtService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private mailService: MailService
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -157,42 +159,9 @@ export class AuthService {
   }
 
   async sendVerificationEmail(email: string, token: string) {
-    // In a real application, you would use a proper email service like SendGrid, AWS SES, etc.
-    this.logger.log(`Sending verification email to ${email} with token ${token.substring(0, 8)}...`);
-    
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const verificationUrl = `${frontendUrl}/auth/verify?token=${token}`;
-    
-    // Log the verification URL for development purposes
-    console.log('=========================================');
-    console.log('📧 VERIFICATION EMAIL');
-    console.log('----------------------------------------');
-    console.log(`TO: ${email}`);
-    console.log(`SUBJECT: Verify your Tez Social account`);
-    console.log('----------------------------------------');
-    console.log(`Welcome to Tez Social!`);
-    console.log(`Please verify your email address by clicking the link below:`);
-    console.log(`🔗 ${verificationUrl}`);
-    console.log(`This link will expire in 24 hours.`);
-    console.log('=========================================');
-    
-    // For development/testing, also enable verification using user ID
-    const apiUrl = this.configService.get<string>('API_URL') || 'http://localhost:3001';
-    const user = await this.userModel.findOne({ email: email.toLowerCase() });
-    if (user) {
-      const bypassUrl = `${apiUrl}/auth/verify-email`;
-      console.log('----------------------------------------');
-      console.log('🛠️ FOR TESTING: Send this JSON to the verification endpoint:');
-      console.log(`POST ${bypassUrl}`);
-      console.log(JSON.stringify({ token }));
-      console.log('----------------------------------------');
-    }
-    
-    // Here would be the actual email sending logic
-    // For now, we'll just log that we would send an email
-    this.logger.log(`[EMAIL SERVICE] Email verification link sent to ${email}`);
-    
-    return true;
+    // Use the mail service to send the email
+    const result = await this.mailService.sendVerificationEmail(email, token);
+    return result;
   }
 
   async resendVerificationEmail(email: string) {
