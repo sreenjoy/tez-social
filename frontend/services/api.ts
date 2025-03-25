@@ -1,7 +1,11 @@
 import axios from 'axios';
 import useAuthStore from '../store/authStore';
+import { mockAuthApi } from './mockApi';
 
-// Get the backend URL from environment variables
+// Flag to control whether to use mock API
+const USE_MOCK_API = true; // Set to false when backend is available
+
+// Get the backend URL from environment variables or use local development URL
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 // Create a custom axios instance for our API
@@ -33,7 +37,16 @@ axiosInstance.interceptors.request.use(
 
 // Add a response interceptor to handle token expiration and errors
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Extract data from response to match expected format for our frontend
+    if (response.data && typeof response.data === 'object') {
+      // NestJS wraps responses in a data field with metadata
+      if (response.data.data !== undefined) {
+        return { ...response, data: response.data.data };
+      }
+    }
+    return response;
+  },
   async (error) => {
     // Handle network errors
     if (!error.response) {
@@ -57,16 +70,75 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Test if we should use mock API - detect if backend is not reachable
+const testBackendAndSetMockMode = async () => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/health`, { 
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+
+    if (response.ok) {
+      console.log('Backend is reachable, using real API');
+      window.localStorage.setItem('useMockApi', 'false');
+      return false;
+    } else {
+      console.log('Backend returned error, using mock API');
+      window.localStorage.setItem('useMockApi', 'true');
+      return true;
+    }
+  } catch (error) {
+    console.log('Backend is not reachable, using mock API', error);
+    window.localStorage.setItem('useMockApi', 'true');
+    return true;
+  }
+};
+
+// If in browser, check if we should use mock API
+if (typeof window !== 'undefined') {
+  const storedMockMode = window.localStorage.getItem('useMockApi');
+  if (storedMockMode === null) {
+    // Only run the test when the value is not set
+    testBackendAndSetMockMode().catch(() => {
+      window.localStorage.setItem('useMockApi', 'true');
+    });
+  }
+}
+
+// Function to check if mock API should be used
+export const shouldUseMockApi = () => {
+  // Use real backend now that it's fixed
+  return false;
+  
+  if (typeof window !== 'undefined') {
+    return window.localStorage.getItem('useMockApi') === 'true';
+  }
+  return USE_MOCK_API;
+};
+
 // API service for authentication related endpoints
 export const authApi = {
   // Register a new user
   register: async (userData: any) => {
+    // Use mock API if enabled
+    if (shouldUseMockApi()) {
+      try {
+        return await mockAuthApi.register(userData);
+      } catch (error: any) {
+        throw new Error(error.message || 'Registration failed. Please try again.');
+      }
+    }
+    
     try {
       const response = await axiosInstance.post('/auth/register', userData);
+      // The response data has already been extracted by the interceptor
       if (!response.data) {
         throw new Error('Invalid response from server');
       }
-      return response.data;
+      
+      // After successful registration, try to login automatically
+      return await authApi.login(userData.email, userData.password);
     } catch (error: any) {
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
@@ -77,12 +149,24 @@ export const authApi = {
   
   // Login with email and password
   login: async (email: string, password: string) => {
+    // Use mock API if enabled
+    if (shouldUseMockApi()) {
+      try {
+        return await mockAuthApi.login(email, password);
+      } catch (error: any) {
+        throw new Error(error.message || 'Failed to login. Please check your credentials.');
+      }
+    }
+    
     try {
       const response = await axiosInstance.post('/auth/login', { email, password });
-      if (!response.data?.accessToken || !response.data?.user) {
+      // The response interceptor should have already extracted the data field
+      const data = response.data;
+      
+      if (!data.accessToken || !data.user) {
         throw new Error('Invalid response from server');
       }
-      return response.data;
+      return data;
     } catch (error: any) {
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
@@ -93,30 +177,55 @@ export const authApi = {
   
   // Logout the current user
   logout: async () => {
+    // Use mock API if enabled
+    if (shouldUseMockApi()) {
+      return await mockAuthApi.logout();
+    }
+    
     const response = await axiosInstance.post('/auth/logout');
     return response.data;
   },
   
   // Get the current authenticated user
   getCurrentUser: async () => {
+    // Use mock API if enabled
+    if (shouldUseMockApi()) {
+      return await mockAuthApi.getCurrentUser();
+    }
+    
     const response = await axiosInstance.get('/auth/me');
     return response.data;
   },
 
   // Verify email with token
   verifyEmail: async (token: string) => {
+    // Use mock API if enabled
+    if (shouldUseMockApi()) {
+      return await mockAuthApi.verifyEmail(token);
+    }
+    
     const response = await axiosInstance.post('/auth/verify-email', { token });
     return response.data;
   },
 
   // Resend verification email
   resendVerification: async (email: string) => {
+    // Use mock API if enabled
+    if (shouldUseMockApi()) {
+      return await mockAuthApi.resendVerification(email);
+    }
+    
     const response = await axiosInstance.post('/auth/resend-verification', { email });
     return response.data;
   },
 
   // Get user onboarding status
   getOnboardingStatus: async () => {
+    // Use mock API if enabled
+    if (shouldUseMockApi()) {
+      return await mockAuthApi.getOnboardingStatus();
+    }
+    
     const response = await axiosInstance.get('/auth/onboarding-status');
     return response.data;
   },
