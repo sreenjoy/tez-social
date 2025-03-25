@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -32,10 +33,33 @@ jobs:
         run: npm install -g vercel
         
       - name: Deploy to Vercel
+        id: deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           cd frontend
-          vercel --prod --token=$VERCEL_TOKEN 
+          echo "::group::Vercel Deployment"
+          DEPLOYMENT_URL=$(vercel --prod --token=$VERCEL_TOKEN)
+          echo "::set-output name=url::$DEPLOYMENT_URL"
+          echo "Deployed to: $DEPLOYMENT_URL"
+          echo "::endgroup::"
+          
+      - name: Fetch Vercel Logs
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "::group::Vercel Deployment Logs"
+          vercel logs --token=$VERCEL_TOKEN ${{ steps.deploy.outputs.url }}
+          echo "::endgroup::"
+          
+      - name: Check Deployment Status
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          echo "::group::Deployment Status"
+          vercel inspect --token=$VERCEL_TOKEN ${{ steps.deploy.outputs.url }}
+          echo "::endgroup::" 
