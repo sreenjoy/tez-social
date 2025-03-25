@@ -35,11 +35,15 @@ export class AuthController {
     forbidNonWhitelisted: true,
     exceptionFactory: (errors) => {
       const messages = errors.map(error => {
+        console.log('Validation error:', JSON.stringify(error));
         return {
           property: error.property,
           constraints: error.constraints
         };
       });
+      
+      console.log('All validation errors:', JSON.stringify(messages));
+      
       return new BadRequestException({
         message: 'Validation failed',
         errors: messages
@@ -48,6 +52,7 @@ export class AuthController {
   }))
   async register(@Body() registerDto: RegisterDto) {
     try {
+      this.logger.log(`Registration attempt with data: ${JSON.stringify(registerDto)}`);
       const result = await this.authService.register(registerDto);
       return {
         statusCode: HttpStatus.CREATED,
