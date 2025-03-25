@@ -262,29 +262,4 @@ export class AuthService {
       throw error;
     }
   }
-
-  // Development-only method to bypass email verification
-  async bypassEmailVerification(email: string): Promise<{ message: string }> {
-    try {
-      const user = await this.userModel.findOne({ email: email.toLowerCase() });
-      
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-      
-      if (user.isEmailVerified) {
-        return { message: 'Email already verified' };
-      }
-      
-      user.isEmailVerified = true;
-      await user.save();
-      
-      return {
-        message: 'Email verification bypassed successfully',
-      };
-    } catch (error) {
-      this.logger.error(`Error bypassing email verification: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
 } 
