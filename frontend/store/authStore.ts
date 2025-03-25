@@ -2,16 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi } from '../services/api';
 import { jwtDecode } from 'jwt-decode';
-
-interface User {
-  _id: string;
-  email: string;
-  username?: string;
-  role: 'user' | 'admin';
-  companyId?: string; // Added company association
-  isEmailVerified?: boolean;
-  picture?: string;
-}
+import { User } from '../types/user';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -28,6 +19,7 @@ interface AuthState {
   setAuthState: (authState: Partial<AuthState>) => void;
   clearError: () => void;
   checkAuth: () => Promise<boolean>;
+  setUser: (user: User) => void;
 }
 
 // Create auth store with persistence
@@ -47,25 +39,21 @@ const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null });
           
           const response = await authApi.login(email, password);
-          const { data } = response;
+          const { accessToken, user } = response;
           
-          if (!data || !data.accessToken) {
+          if (!accessToken || !user) {
             throw new Error('Invalid response from server');
           }
           
-          // Store token in localStorage
-          localStorage.setItem('token', data.accessToken);
+          // Store token in both localStorage and Zustand store
+          localStorage.setItem('token', accessToken);
           localStorage.setItem('isLoggedIn', 'true');
-          
-          // Store user data
-          if (data.user) {
-            localStorage.setItem('user', JSON.stringify(data.user));
-          }
+          localStorage.setItem('user', JSON.stringify(user));
           
           set({ 
             isAuthenticated: true,
-            user: data.user,
-            token: data.accessToken,
+            user,
+            token: accessToken,
             isLoading: false,
             error: null
           });
@@ -73,7 +61,7 @@ const useAuthStore = create<AuthState>()(
           console.error('Login error:', error);
           set({ 
             isLoading: false, 
-            error: error.response?.data?.message || 'Failed to login. Please try again.',
+            error: error.message || 'Failed to login. Please try again.',
             isAuthenticated: false,
             user: null,
             token: null
@@ -90,7 +78,7 @@ const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
-          // Clear token from localStorage
+          // Clear token from both localStorage and Zustand store
           localStorage.removeItem('token');
           localStorage.removeItem('isLoggedIn');
           localStorage.removeItem('user');
@@ -178,10 +166,15 @@ const useAuthStore = create<AuthState>()(
           });
           return false;
         }
+      },
+      
+      // Set user
+      setUser: (user: User) => {
+        set({ user });
       }
     }),
     {
-      name: 'auth-storage', // name for localStorage
+      name: 'auth-storage',
       partialize: (state) => ({ 
         token: state.token,
         user: state.user,
