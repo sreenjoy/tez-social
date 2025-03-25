@@ -57,7 +57,7 @@ export default function OnboardingPage() {
   const { user, isAuthenticated } = useAuthStore();
   
   const [formData, setFormData] = useState({
-    ownerFullName: user ? `${user.firstName} ${user.lastName}` : '',
+    ownerFullName: user ? user.username : '',
     name: '',
     url: '',
     teamSize: '',
@@ -72,6 +72,16 @@ export default function OnboardingPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
+  // Update form data when user data becomes available
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        ownerFullName: user.username
+      }));
+    }
+  }, [user]);
+
   // Check authentication status
   useEffect(() => {
     if (!isAuthenticated) {
