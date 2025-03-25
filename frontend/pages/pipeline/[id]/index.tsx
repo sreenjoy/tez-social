@@ -18,14 +18,28 @@ import {
 import { Add as AddIcon, More as MoreIcon } from '@mui/icons-material';
 import DashboardLayout from '../../../components/DashboardLayout';
 import { pipelineApi, dealApi } from '../../../services/api';
+import { Stage } from '../../../types/stage';
+
+interface Pipeline {
+  _id: string;
+  name: string;
+  description?: string;
+}
+
+interface Deal {
+  _id: string;
+  name: string;
+  value: number;
+  contactName?: string;
+}
 
 const PipelineDetailPage = () => {
   const router = useRouter();
   const { id } = router.query;
   
-  const [pipeline, setPipeline] = useState<any>(null);
-  const [stages, setStages] = useState<any[]>([]);
-  const [deals, setDeals] = useState<Record<string, any[]>>({});
+  const [pipeline, setPipeline] = useState<Pipeline | null>(null);
+  const [stages, setStages] = useState<Stage[]>([]);
+  const [deals, setDeals] = useState<Record<string, Deal[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -46,15 +60,15 @@ const PipelineDetailPage = () => {
         setStages(stagesData);
         
         // Fetch deals for each stage
-        const dealsPromises = stagesData.map(stage => 
+        const dealsPromises = stagesData.map((stage: Stage) => 
           dealApi.getDealsByStage(stage._id)
-            .then(stageDeals => ({ stageId: stage._id, deals: stageDeals }))
+            .then((stageDeals: Deal[]) => ({ stageId: stage._id, deals: stageDeals }))
         );
         
         const allDealsData = await Promise.all(dealsPromises);
         
         // Organize deals by stage ID
-        const dealsMap: Record<string, any[]> = {};
+        const dealsMap: Record<string, Deal[]> = {};
         allDealsData.forEach(({ stageId, deals }) => {
           dealsMap[stageId] = deals;
         });
