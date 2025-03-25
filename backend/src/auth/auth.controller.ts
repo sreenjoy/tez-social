@@ -188,4 +188,22 @@ export class AuthController {
       throw error;
     }
   }
+
+  @Post('dev/verify-all-users')
+  @HttpCode(HttpStatus.OK)
+  async verifyAllUsers() {
+    try {
+      const result = await this.authService.verifyAllUsers();
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Success',
+        data: result,
+        timestamp: new Date().toISOString(),
+        path: '/api/auth/dev/verify-all-users',
+      };
+    } catch (error) {
+      this.logger.error(`Verify all users error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 } 

@@ -267,4 +267,34 @@ export class AuthService {
       throw error;
     }
   }
+
+  async verifyAllUsers() {
+    try {
+      this.logger.log('Verifying all users in the system');
+      
+      // Find all users that are not verified
+      const unverifiedUsers = await this.userModel.find({ isEmailVerified: false });
+      
+      if (unverifiedUsers.length === 0) {
+        return { message: 'No unverified users found', count: 0 };
+      }
+      
+      // Update all unverified users
+      const result = await this.userModel.updateMany(
+        { isEmailVerified: false },
+        { $set: { isEmailVerified: true } }
+      );
+      
+      this.logger.log(`Verified ${result.modifiedCount} users`);
+      
+      return {
+        message: 'All users have been verified successfully',
+        count: result.modifiedCount,
+        emails: unverifiedUsers.map(user => user.email)
+      };
+    } catch (error) {
+      this.logger.error(`Failed to verify all users: ${error.message}`, error.stack);
+      throw new BadRequestException('Failed to verify all users. Please try again later.');
+    }
+  }
 } 
