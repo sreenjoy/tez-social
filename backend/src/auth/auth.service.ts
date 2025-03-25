@@ -291,4 +291,41 @@ export class AuthService {
       throw new BadRequestException('Failed to verify all users. Please try again later.');
     }
   }
+
+  async resetUserPassword(email: string, newPassword: string) {
+    try {
+      this.logger.log(`Resetting password for user with email: ${email}`);
+      
+      // Find user by email (case insensitive)
+      const user = await this.userModel.findOne({ 
+        email: new RegExp(`^${email}$`, 'i') 
+      });
+      
+      if (!user) {
+        this.logger.warn(`Reset password failed: No user found with email ${email}`);
+        throw new NotFoundException('User not found');
+      }
+      
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update user with new password
+      user.password = hashedPassword;
+      await user.save();
+      
+      this.logger.log(`Password reset successful for user ${email}`);
+      
+      return {
+        message: 'Password reset successful',
+        email: user.email
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      
+      this.logger.error(`Failed to reset password: ${error.message}`, error.stack);
+      throw new BadRequestException('Failed to reset password. Please try again later.');
+    }
+  }
 } 

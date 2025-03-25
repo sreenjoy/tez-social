@@ -206,4 +206,26 @@ export class AuthController {
       throw error;
     }
   }
+
+  @Post('dev/reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() body: { email: string; newPassword: string }) {
+    try {
+      if (!body.email || !body.newPassword) {
+        throw new BadRequestException('Email and new password are required');
+      }
+      
+      const result = await this.authService.resetUserPassword(body.email, body.newPassword);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Success',
+        data: result,
+        timestamp: new Date().toISOString(),
+        path: '/api/auth/dev/reset-password',
+      };
+    } catch (error) {
+      this.logger.error(`Reset password error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 } 
