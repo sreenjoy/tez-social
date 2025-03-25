@@ -73,18 +73,19 @@ axiosInstance.interceptors.response.use(
 // Test if we should use mock API - detect if backend is not reachable
 const testBackendAndSetMockMode = async () => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/health`, { 
-      method: 'GET',
+    // Try to access the auth endpoint which we know exists
+    const response = await fetch(`${BACKEND_URL}/api/auth/login`, { 
+      method: 'HEAD', // Just check if endpoint exists without logging in
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(5000) // 5 second timeout
     });
 
-    if (response.ok) {
+    if (response.status !== 404) { // Any response other than 404 means backend is running
       console.log('Backend is reachable, using real API');
       window.localStorage.setItem('useMockApi', 'false');
       return false;
     } else {
-      console.log('Backend returned error, using mock API');
+      console.log('Backend returned 404, using mock API');
       window.localStorage.setItem('useMockApi', 'true');
       return true;
     }
@@ -108,9 +109,6 @@ if (typeof window !== 'undefined') {
 
 // Function to check if mock API should be used
 export const shouldUseMockApi = () => {
-  // Use real backend now that it's fixed
-  return false;
-  
   if (typeof window !== 'undefined') {
     return window.localStorage.getItem('useMockApi') === 'true';
   }
