@@ -164,7 +164,29 @@ export class AuthService {
     const verificationUrl = `${frontendUrl}/auth/verify?token=${token}`;
     
     // Log the verification URL for development purposes
-    this.logger.debug(`Verification URL: ${verificationUrl}`);
+    console.log('=========================================');
+    console.log('📧 VERIFICATION EMAIL');
+    console.log('----------------------------------------');
+    console.log(`TO: ${email}`);
+    console.log(`SUBJECT: Verify your Tez Social account`);
+    console.log('----------------------------------------');
+    console.log(`Welcome to Tez Social!`);
+    console.log(`Please verify your email address by clicking the link below:`);
+    console.log(`🔗 ${verificationUrl}`);
+    console.log(`This link will expire in 24 hours.`);
+    console.log('=========================================');
+    
+    // For development/testing, also enable verification using user ID
+    const apiUrl = this.configService.get<string>('API_URL') || 'http://localhost:3001';
+    const user = await this.userModel.findOne({ email: email.toLowerCase() });
+    if (user) {
+      const bypassUrl = `${apiUrl}/auth/verify-email`;
+      console.log('----------------------------------------');
+      console.log('🛠️ FOR TESTING: Send this JSON to the verification endpoint:');
+      console.log(`POST ${bypassUrl}`);
+      console.log(JSON.stringify({ token }));
+      console.log('----------------------------------------');
+    }
     
     // Here would be the actual email sending logic
     // For now, we'll just log that we would send an email
