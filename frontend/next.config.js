@@ -22,6 +22,19 @@ const nextConfig = {
       transform: '@mui/icons-material/{{member}}',
     },
   },
+  // Optimize output
+  output: 'standalone',
+  // Configure images
+  images: {
+    domains: ['localhost', 'tez-social-production.up.railway.app'],
+  },
+  // Production source maps
+  productionBrowserSourceMaps: true,
+  // Experimental features
+  experimental: {
+    optimizeCss: true,
+    esmExternals: true,
+  },
 }
 
 module.exports = nextConfig 
