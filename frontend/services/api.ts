@@ -133,5 +133,32 @@ export const postApi = {
   },
 };
 
+// API service for Telegram integration
+export const telegramApi = {
+  // Get connection status
+  getConnectionStatus: async () => {
+    const response = await axiosInstance.get('/api/telegram/status');
+    return response.data;
+  },
+  
+  // Connect Telegram account with phone number
+  connect: async (phoneNumber: string) => {
+    const response = await axiosInstance.post('/api/telegram/connect', { phoneNumber });
+    return response.data;
+  },
+  
+  // Verify code sent to Telegram
+  verifyCode: async (code: string) => {
+    const response = await axiosInstance.post('/api/telegram/verify', { code });
+    return response.data;
+  },
+  
+  // Get Telegram contacts
+  getContacts: async (page = 1, limit = 20) => {
+    const response = await axiosInstance.get(`/api/telegram/contacts?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+};
+
 // Default export for the axios instance
 export default axiosInstance; 

@@ -6,8 +6,6 @@ interface User {
   id?: string;
   email?: string;
   username?: string;
-  firstName?: string;
-  lastName?: string;
   role?: string;
   picture?: string;
 }
@@ -61,7 +59,6 @@ const useAuthStore = create<AuthState>()(
             isInitialized: true
           });
           
-          // No navigation here - let the component handle it
           return;
         } catch (error: any) {
           const errorMessage = error?.response?.data?.message || 'Login failed. Please try again.';
@@ -84,8 +81,6 @@ const useAuthStore = create<AuthState>()(
           token: null,
           isInitialized: true
         });
-        
-        // No navigation here - let the component handle it
       },
       
       // Register a new user
@@ -109,7 +104,6 @@ const useAuthStore = create<AuthState>()(
             isInitialized: true
           });
           
-          // No navigation here - let the component handle it
           return;
         } catch (error: any) {
           const errorMessage = error?.response?.data?.message || 'Registration failed. Please try again.';
@@ -166,9 +160,6 @@ const useAuthStore = create<AuthState>()(
 
 // Initialize auth state from localStorage (client-side only)
 if (typeof window !== 'undefined') {
-  // Add some logging for debugging
-  console.log('Initializing auth store from localStorage');
-  
   const token = localStorage.getItem('token');
   const userString = localStorage.getItem('user');
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -176,8 +167,6 @@ if (typeof window !== 'undefined') {
   if (token && isLoggedIn) {
     try {
       const user = userString ? JSON.parse(userString) : null;
-      
-      console.log('Found auth data in localStorage', { token: !!token, user: !!user });
       
       useAuthStore.getState().setAuthState({
         isAuthenticated: true,
@@ -188,13 +177,11 @@ if (typeof window !== 'undefined') {
       
       // Verify token in background
       useAuthStore.getState().checkAuth().then((isValid) => {
-        console.log('Background token verification result:', isValid);
         if (!isValid) {
           useAuthStore.getState().logout();
         }
       });
     } catch (error) {
-      console.error('Failed to parse auth data from localStorage', error);
       // Clear invalid data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -208,7 +195,6 @@ if (typeof window !== 'undefined') {
       });
     }
   } else {
-    console.log('No auth data found in localStorage');
     useAuthStore.getState().setAuthState({
       isInitialized: true
     });
