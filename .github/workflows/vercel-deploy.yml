@@ -1,4 +1,4 @@
-name: Deploy to Vercel and Monitor
+name: Deploy to Vercel
 
 on:
   push:
@@ -8,137 +8,43 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+
+      - name: Verify files and configurations
+        run: |
+          echo "Checking project structure and configuration files..."
+          ls -la
+          cat vercel.json
+          echo "Checking frontend configuration..."
+          cd frontend
+          ls -la
+          cat next.config.js
+          cat package.json
           
       - name: Install dependencies
         run: |
           cd frontend
           npm ci
           
-      - name: Build
+      - name: Build project
         run: |
           cd frontend
           npm run build
           
       - name: Install Vercel CLI
         run: npm install -g vercel
-      
-      - name: Create Vercel project link if needed
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          cd frontend
-          # Create vercel.json if it doesn't exist
-          echo "Linking project to Vercel..."
-          vercel link --token=$VERCEL_TOKEN --yes --scope=$VERCEL_ORG_ID --project=$VERCEL_PROJECT_ID || true
         
       - name: Deploy to Vercel
-        id: deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          cd frontend
-          echo "Deploying to Vercel..."
-          DEPLOYMENT_URL=$(vercel --prod --token=$VERCEL_TOKEN --yes)
-          echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
-          echo "Deployed to $DEPLOYMENT_URL"
-          
-          # Create a delay to allow deployment to start processing
-          sleep 10
-
-      - name: Get Deployment ID
-        id: get_deployment_id
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-        run: |
-          echo "Fetching latest deployment ID..."
-          DEPLOYMENT_ID=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID" | jq -r '.deployments[0].uid')
-          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
-          echo "Latest deployment ID: $DEPLOYMENT_ID"
-
-      - name: Check Deployment Status
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          DEPLOYMENT_ID=${{ steps.get_deployment_id.outputs.DEPLOYMENT_ID }}
-          
-          if [ -z "$DEPLOYMENT_ID" ]; then
-            echo "❌ Failed to retrieve deployment ID"
-            exit 1
-          fi
-          
-          # Wait for deployment to complete (max 5 minutes)
-          MAX_ATTEMPTS=30
-          COUNT=0
-          DELAY=10
-          
-          echo "Checking deployment status for ID: $DEPLOYMENT_ID"
-          
-          while [ $COUNT -lt $MAX_ATTEMPTS ]; do
-            RESPONSE=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID")
-            echo "API Response: $RESPONSE"
-            STATUS=$(echo "$RESPONSE" | jq -r '.readyState')
-            
-            echo "Current status: $STATUS"
-            
-            if [ "$STATUS" = "READY" ]; then
-              echo "✅ Deployment successful!"
-              break
-            elif [ "$STATUS" = "ERROR" ]; then
-              echo "❌ Deployment failed!"
-              
-              # Get error logs
-              LOGS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID/events")
-              echo "Deployment logs:"
-              echo "$LOGS" | jq '.events[] | select(.type == "stderr" or .type == "error") | .payload'
-              
-              exit 1
-            fi
-            
-            COUNT=$((COUNT + 1))
-            echo "Waiting for deployment to complete... Attempt $COUNT of $MAX_ATTEMPTS"
-            sleep $DELAY
-          done
-          
-          if [ $COUNT -eq $MAX_ATTEMPTS ]; then
-            echo "❌ Deployment timed out!"
-            exit 1
-          fi
-
-      - name: Check website availability
-        run: |
-          # Wait a bit for the deployment to fully propagate
-          sleep 20
-          
-          DEPLOYMENT_URL=${{ steps.deploy.outputs.DEPLOYMENT_URL }}
-          
-          echo "Checking if website is accessible at $DEPLOYMENT_URL"
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $DEPLOYMENT_URL)
-          
-          if [ $HTTP_STATUS -eq 200 ]; then
-            echo "✅ Website is accessible (HTTP 200)"
-          else
-            echo "❌ Website returned HTTP status $HTTP_STATUS"
-            echo "Fetching detailed logs..."
-            
-            # Get more detailed logs to diagnose issues
-            DEPLOYMENT_ID=${{ steps.get_deployment_id.outputs.DEPLOYMENT_ID }}
-            LOGS=$(curl -s -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID/events")
-            echo "Deployment logs:"
-            echo "$LOGS" | jq -r '.events[] | "[\(.date)] \(.type): \(.payload)"'
-            
-            exit 1
-          fi 
+          vercel --cwd . --token ${VERCEL_TOKEN} --scope ${VERCEL_ORG_ID} --prod 
