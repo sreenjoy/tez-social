@@ -115,7 +115,7 @@ const RegisterForm: React.FC = () => {
           disabled={isLoading || redirecting}
           size="small"
           variant="outlined"
-          placeholder="johndoe"
+          placeholder="username"
           inputProps={{
             className: 'bg-[#111827]/20 text-white'
           }}
@@ -203,12 +203,12 @@ const RegisterForm: React.FC = () => {
                   onClick={togglePasswordVisibility}
                   edge="end"
                   size="small"
-                  sx={{ color: 'gray', mr: -0.5 }}
+                  sx={{ color: 'rgba(255,255,255,0.5)', mr: -0.5 }}
                 >
                   {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   )}
                 </IconButton>
               </InputAdornment>
@@ -261,12 +261,12 @@ const RegisterForm: React.FC = () => {
                   onClick={toggleConfirmPasswordVisibility}
                   edge="end"
                   size="small"
-                  sx={{ color: 'gray', mr: -0.5 }}
+                  sx={{ color: 'rgba(255,255,255,0.5)', mr: -0.5 }}
                 >
                   {showConfirmPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   )}
                 </IconButton>
               </InputAdornment>
@@ -307,10 +307,10 @@ const RegisterForm: React.FC = () => {
           textTransform: 'none',
           fontWeight: 'bold',
           fontSize: '1rem',
+          background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
           boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.4)',
-          backgroundColor: '#3b82f6',
           '&:hover': {
-            backgroundColor: '#2563eb',
+            background: 'linear-gradient(90deg, #2563eb, #4f96ff)',
             boxShadow: '0 6px 20px rgba(59, 130, 246, 0.6)'
           },
           position: 'relative',
@@ -361,7 +361,7 @@ const RegisterForm: React.FC = () => {
               p: 0,
               minWidth: 'unset',
               fontWeight: 600,
-              color: '#3b82f6',
+              color: '#60a5fa',
               '&:hover': {
                 backgroundColor: 'transparent',
                 textDecoration: 'underline'
