@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "tez-social-frontend",
-  "buildCommand": "npm run clean && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "framework": "nextjs",
@@ -15,7 +15,9 @@
     }
   },
   "github": {
-    "silent": true
+    "silent": true,
+    "autoAlias": true,
+    "enabled": true
   },
   "routes": [
     {

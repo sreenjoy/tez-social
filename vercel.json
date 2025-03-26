@@ -1,10 +1,15 @@
 {
   "framework": "nextjs",
-  "buildCommand": "cd frontend && npm install && npm run clean && npm run build",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "devCommand": "cd frontend && npm run dev",
   "outputDirectory": "frontend/.next",
   "cleanUrls": true,
   "regions": ["sfo1"],
+  "github": {
+    "silent": true,
+    "autoAlias": true,
+    "enabled": true
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
