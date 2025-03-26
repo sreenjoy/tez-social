@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { TextField, Button, Box, FormControlLabel, Checkbox, CircularProgress, Alert, InputAdornment, IconButton } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { TextField, Button, Box, FormControlLabel, Checkbox, CircularProgress, Alert, InputAdornment, IconButton, Typography } from '@mui/material';
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
 import { useTheme } from 'next-themes';
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
-  const { login, isLoading, error: authError, clearError } = useAuthStore();
+  const { login, isLoading, isAuthenticated, error: authError, clearError } = useAuthStore();
   const { theme } = useTheme();
   
   const [email, setEmail] = useState('');
@@ -15,11 +15,27 @@ const LoginForm: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [submitAttempts, setSubmitAttempts] = useState(0);
+
+  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, router]);
+
+  // Clear errors when component unmounts
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, [clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     clearError();
+    setSubmitAttempts(prev => prev + 1);
 
     // Form validation
     if (!email || !password) {
@@ -27,15 +43,29 @@ const LoginForm: React.FC = () => {
       return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     try {
+      // Log the attempt
+      console.log(`Attempting login (attempt #${submitAttempts + 1})...`);
+      
+      // Call the login function from auth store
       await login(email, password, rememberMe);
+      
+      // If successful, set redirecting state
       setRedirecting(true);
-      // Wait a bit before redirecting to show success state
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      
+      // No need for setTimeout here, we handle redirect in the useEffect above
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      // Handle login errors
+      const errorMessage = err.message || 'Login failed. Please try again.';
+      console.error('Login error:', errorMessage);
+      setError(errorMessage);
       setRedirecting(false);
     }
   };
@@ -45,6 +75,18 @@ const LoginForm: React.FC = () => {
   };
 
   const isDarkMode = theme === 'dark';
+
+  // Don't render the form if we're authenticated and redirecting
+  if (isAuthenticated && !error) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <CircularProgress size={30} sx={{ color: isDarkMode ? '#60a5fa' : '#3b82f6' }} />
+        <Typography variant="body1" sx={{ mt: 2, color: isDarkMode ? 'white' : 'black' }}>
+          Redirecting to dashboard...
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', textAlign: 'left' }}>
