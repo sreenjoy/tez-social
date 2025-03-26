@@ -1,8 +1,8 @@
 import axios from 'axios';
 import useAuthStore from '../store/authStore';
 
-// Flag to control whether to use mock API
-const USE_MOCK_API = false; // Set to false when backend is available
+// Always use real API in production
+const USE_MOCK_API = false;
 
 // Get the backend URL from environment variables
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tez-social-production.up.railway.app';
@@ -69,53 +69,14 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Test if we should use mock API - detect if backend is not reachable
-const testBackendAndSetMockMode = async () => {
-  try {
-    // Try to access the auth endpoint which we know exists
-    const response = await fetch(`${BACKEND_URL}/api/auth/login`, { 
-      method: 'HEAD', // Just check if endpoint exists without logging in
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(5000) // 5 second timeout
-    });
-
-    if (response.status !== 404) { // Any response other than 404 means backend is running
-      console.log('Backend is reachable, using real API');
-      window.localStorage.setItem('useMockApi', 'false');
-      return false;
-    } else {
-      console.log('Backend returned 404, using mock API');
-      window.localStorage.setItem('useMockApi', 'true');
-      return true;
-    }
-  } catch (error) {
-    console.log('Backend is not reachable, using mock API', error);
-    window.localStorage.setItem('useMockApi', 'true');
-    return true;
-  }
-};
-
-// If in browser, check if we should use mock API
-if (typeof window !== 'undefined') {
-  const storedMockMode = window.localStorage.getItem('useMockApi');
-  if (storedMockMode === null) {
-    // Only run the test when the value is not set
-    testBackendAndSetMockMode().catch(() => {
-      window.localStorage.setItem('useMockApi', 'true');
-    });
-  }
-}
-
-// Function to check if mock API should be used
+// Always use real API in production
 export const shouldUseMockApi = () => {
-  if (typeof window !== 'undefined') {
-    return window.localStorage.getItem('useMockApi') === 'true';
-  }
-  return USE_MOCK_API;
+  return false; // Never use mock API in production
 };
 
 // Simple mock responses for development only
 const mockResponses = {
+  // These are kept for reference but won't be used in production
   register: async (userData: any) => {
     return {
       user: {
@@ -157,16 +118,7 @@ const mockResponses = {
 // API service for authentication related endpoints
 export const authApi = {
   // Register a new user
-  register: async (userData: any) => {
-    // Use mock API if enabled
-    if (shouldUseMockApi()) {
-      try {
-        return await mockResponses.register(userData);
-      } catch (error: any) {
-        throw new Error(error.message || 'Registration failed. Please try again.');
-      }
-    }
-    
+  register: async (userData: any) => {    
     try {
       const response = await axiosInstance.post('/auth/register', userData);
       // The response data has already been extracted by the interceptor
@@ -174,8 +126,7 @@ export const authApi = {
         throw new Error('Invalid response from server');
       }
       
-      // After successful registration, try to login automatically
-      return await authApi.login(userData.email, userData.password);
+      return response.data;
     } catch (error: any) {
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
@@ -186,15 +137,6 @@ export const authApi = {
   
   // Login with email and password
   login: async (email: string, password: string) => {
-    // Use mock API if enabled
-    if (shouldUseMockApi()) {
-      try {
-        return await mockResponses.login();
-      } catch (error: any) {
-        throw new Error(error.message || 'Failed to login. Please check your credentials.');
-      }
-    }
-    
     try {
       const response = await axiosInstance.post('/auth/login', { email, password });
       // The response interceptor should have already extracted the data field
@@ -214,85 +156,80 @@ export const authApi = {
   
   // Logout the current user
   logout: async () => {
-    // Use mock API if enabled
-    if (shouldUseMockApi()) {
-      return await mockResponses.logout();
-    }
-    
     const response = await axiosInstance.post('/auth/logout');
     return response.data;
   },
   
   // Get the current authenticated user
   getCurrentUser: async () => {
-    // Use mock API if enabled
-    if (shouldUseMockApi()) {
-      return await mockResponses.getCurrentUser();
-    }
-    
     const response = await axiosInstance.get('/auth/me');
     return response.data;
   },
 
   // Verify email with token
   verifyEmail: async (token: string) => {
-    // Use mock API if enabled
-    if (shouldUseMockApi()) {
-      return await mockResponses.verifyEmail();
-    }
-    
     const response = await axiosInstance.post('/auth/verify-email', { token });
     return response.data;
   },
 
   // Resend verification email
   resendVerification: async (email: string) => {
-    // Use mock API if enabled
-    if (shouldUseMockApi()) {
-      return await mockResponses.resendVerification();
-    }
-    
     const response = await axiosInstance.post('/auth/resend-verification', { email });
     return response.data;
   },
 
-  // Get user onboarding status
+  // Get onboarding status
   getOnboardingStatus: async () => {
-    // Use mock API if enabled
-    if (shouldUseMockApi()) {
-      return await mockResponses.getOnboardingStatus();
-    }
-    
     const response = await axiosInstance.get('/auth/onboarding-status');
     return response.data;
   },
+
+  // Complete onboarding
+  completeOnboarding: async (data: any) => {
+    const response = await axiosInstance.post('/auth/complete-onboarding', data);
+    return response.data;
+  },
+
+  // Request password reset
+  requestPasswordReset: async (email: string) => {
+    const response = await axiosInstance.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  // Reset password with token
+  resetPassword: async (token: string, password: string) => {
+    const response = await axiosInstance.post('/auth/reset-password', { token, password });
+    return response.data;
+  }
 };
 
 // API service for user related endpoints
 export const userApi = {
-  // Get user profile
-  getProfile: async (userId: string) => {
-    const response = await axiosInstance.get(`/users/${userId}`);
-    return response.data;
-  },
-  
   // Update user profile
-  updateProfile: async (userId: string, profileData: any) => {
-    const response = await axiosInstance.patch(`/users/${userId}`, profileData);
+  updateProfile: async (data: any) => {
+    const response = await axiosInstance.put('/users/profile', data);
     return response.data;
   },
   
-  // Get followers
-  getFollowers: async (userId: string) => {
-    const response = await axiosInstance.get(`/users/${userId}/followers`);
+  // Get user profile
+  getProfile: async () => {
+    const response = await axiosInstance.get('/users/profile');
     return response.data;
   },
   
-  // Get following
-  getFollowing: async (userId: string) => {
-    const response = await axiosInstance.get(`/users/${userId}/following`);
+  // Upload avatar
+  uploadAvatar: async (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await axiosInstance.post('/users/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
     return response.data;
-  },
+  }
 };
 
 // API service for post related endpoints
