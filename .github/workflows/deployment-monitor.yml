@@ -41,6 +41,11 @@ permissions:
 jobs:
   monitor-deployments:
     runs-on: ubuntu-latest
+    outputs:
+      railway_status: ${{ steps.check_railway.outputs.railway_status }}
+      vercel_status: ${{ steps.check_vercel.outputs.vercel_status }}
+      vercel_deployment_id: ${{ steps.check_vercel.outputs.vercel_deployment_id }}
+      vercel_url: ${{ steps.check_vercel.outputs.vercel_url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -281,4 +286,126 @@ jobs:
             echo "### Immediate Deployment Check" >> $GITHUB_STEP_SUMMARY
             echo "- Triggered by: \`${{ github.event_name }}\` event" >> $GITHUB_STEP_SUMMARY
             echo "- Response time: < 60 seconds" >> $GITHUB_STEP_SUMMARY
-          fi 
+          fi
+
+  # New job to create detailed GitHub issues for failed deployments
+  create-error-log-issue:
+    needs: monitor-deployments
+    if: needs.monitor-deployments.outputs.railway_status == 'unhealthy' || needs.monitor-deployments.outputs.vercel_status == 'unhealthy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create personal access token
+        id: create-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          
+      - name: Fetch Vercel error logs
+        if: needs.monitor-deployments.outputs.vercel_status == 'unhealthy' && needs.monitor-deployments.outputs.vercel_deployment_id != ''
+        id: fetch_vercel_logs
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_ID: ${{ needs.monitor-deployments.outputs.vercel_deployment_id }}
+        run: |
+          echo "Fetching detailed logs for Vercel deployment $DEPLOYMENT_ID..."
+          
+          # Get deployment information
+          DEPLOYMENT_INFO=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID")
+          
+          # Get build logs (all events including debug information)
+          BUILD_LOGS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID/events?limit=100")
+          
+          # Save full logs to file
+          echo "$BUILD_LOGS" > vercel_logs.json
+          
+          # Extract all log messages in chronological order
+          ALL_LOGS=$(echo "$BUILD_LOGS" | jq -r '.events[] | "\(.date) [\(.type)] \(.payload)"' | sort)
+          echo "$ALL_LOGS" > vercel_logs.txt
+          
+          # Extract error messages from logs
+          ERROR_LOGS=$(echo "$BUILD_LOGS" | jq -r '.events[] | select(.type == "stderr" or .type == "error") | "\(.date) [\(.type)] \(.payload)"' | sort)
+          echo "$ERROR_LOGS" > vercel_error_logs.txt
+          
+          # Get deployment metadata
+          CREATED_AT=$(echo "$DEPLOYMENT_INFO" | jq -r '.created')
+          CREATOR=$(echo "$DEPLOYMENT_INFO" | jq -r '.creator.username')
+          TARGET=$(echo "$DEPLOYMENT_INFO" | jq -r '.target')
+          STATE=$(echo "$DEPLOYMENT_INFO" | jq -r '.state')
+          URL=$(echo "$DEPLOYMENT_INFO" | jq -r '.url')
+          
+          echo "deployment_created=$CREATED_AT" >> $GITHUB_OUTPUT
+          echo "deployment_creator=$CREATOR" >> $GITHUB_OUTPUT
+          echo "deployment_target=$TARGET" >> $GITHUB_OUTPUT
+          echo "deployment_state=$STATE" >> $GITHUB_OUTPUT
+          echo "deployment_url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Fetch Railway error logs
+        if: needs.monitor-deployments.outputs.railway_status == 'unhealthy'
+        id: fetch_railway_logs
+        run: |
+          echo "Fetching Railway backend logs..."
+          
+          # Test multiple endpoints to gather diagnostic information
+          BACKEND_URL="https://tez-social-production.up.railway.app"
+          
+          # Check main endpoints
+          ROOT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL || echo "Failed to connect")
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL/api/health || echo "Failed to connect")
+          API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL/api || echo "Failed to connect")
+          
+          echo "Railway root endpoint status: $ROOT_STATUS" > railway_logs.txt
+          echo "Railway health endpoint status: $HEALTH_STATUS" >> railway_logs.txt
+          echo "Railway API endpoint status: $API_STATUS" >> railway_logs.txt
+          
+          # Try to get some response body for debugging
+          echo "\nResponse body from root endpoint:" >> railway_logs.txt
+          curl -s $BACKEND_URL >> railway_logs.txt 2>&1
+          
+          echo "\nResponse body from health endpoint:" >> railway_logs.txt
+          curl -s $BACKEND_URL/api/health >> railway_logs.txt 2>&1
+          
+          echo "\nTracing connection to Railway backend:" >> railway_logs.txt
+          traceroute -m 15 tez-social-production.up.railway.app >> railway_logs.txt 2>&1 || echo "Traceroute failed" >> railway_logs.txt
+          
+          echo "railway_root_status=$ROOT_STATUS" >> $GITHUB_OUTPUT
+          echo "railway_health_status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+          echo "railway_api_status=$API_STATUS" >> $GITHUB_OUTPUT
+
+      - name: Get git changes since last successful deployment
+        run: |
+          # Get recent commits
+          git log -n 10 --pretty=format:"%h - %an, %ar : %s" > recent_commits.txt
+          
+          # Get diff stats for last few commits
+          git diff HEAD~5..HEAD --stat > recent_changes.txt
+
+      - name: Create GitHub issue with deployment logs
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ steps.create-token.outputs.token }}
+          VERCEL_STATUS: ${{ needs.monitor-deployments.outputs.vercel_status }}
+          RAILWAY_STATUS: ${{ needs.monitor-deployments.outputs.railway_status }}
+          VERCEL_URL: ${{ needs.monitor-deployments.outputs.vercel_url }}
+          VERCEL_DEPLOYMENT_ID: ${{ needs.monitor-deployments.outputs.vercel_deployment_id }}
+          VERCEL_LOGS: ${{ steps.fetch_vercel_logs.outputs.deployment_state != '' && '✅' || '❌' }}
+          RAILWAY_LOGS: ${{ steps.fetch_railway_logs.outputs.railway_root_status != '' && '✅' || '❌' }}
+          RUN_ID: ${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/deployment-error-report.md
+
+      - name: Upload log artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-logs
+          path: |
+            vercel_logs.json
+            vercel_logs.txt
+            vercel_error_logs.txt
+            railway_logs.txt
+            recent_commits.txt
+            recent_changes.txt
+          retention-days: 30 
