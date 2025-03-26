@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, CircularProgress, Alert, Typography, InputAdornment, Link } from '@mui/material';
+import { TextField, Button, Box, CircularProgress, Alert, Typography, Link } from '@mui/material';
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
-import GoogleIcon from '@mui/icons-material/Google';
+import useThemeStore from '../store/themeStore';
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
   const { login, isLoading, error: authError, clearError } = useAuthStore();
+  const { resolvedTheme } = useThemeStore();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,21 +28,62 @@ const LoginForm: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Google login functionality would be implemented here
-    alert('Google login not implemented yet');
+  // Text field common styles
+  const textFieldStyles = {
+    '& .MuiOutlinedInput-root': {
+      bgcolor: resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+      borderRadius: '10px',
+      '&:hover fieldset': {
+        borderColor: resolvedTheme === 'dark' ? 'rgba(59, 130, 246, 0.5)' : 'rgba(59, 130, 246, 0.3)',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#3b82f6',
+        borderWidth: '2px',
+      },
+    },
+    '& .MuiOutlinedInput-input': {
+      color: resolvedTheme === 'dark' ? 'white' : '#1a2b42',
+      padding: '16px',
+      '&::placeholder': {
+        color: resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+        opacity: 1,
+      },
+    },
+    '& .MuiFormHelperText-root': {
+      marginLeft: '4px',
+    },
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
       {(error || authError) && (
-        <Alert severity="error" sx={{ mb: 2, bgcolor: 'rgba(211, 47, 47, 0.1)', color: '#f44336' }}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 3, 
+            bgcolor: resolvedTheme === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.05)', 
+            color: '#f44336',
+            border: '1px solid rgba(211, 47, 47, 0.2)',
+            borderRadius: '10px',
+            '& .MuiAlert-icon': {
+              color: '#f44336',
+            },
+          }}
+        >
           {error || authError}
         </Alert>
       )}
       
       <Box sx={{ mb: 3 }}>
-        <Typography variant="body2" sx={{ mb: 1, color: 'white' }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            mb: 1, 
+            color: resolvedTheme === 'dark' ? 'white' : '#1a2b42',
+            fontWeight: 500,
+            ml: 1
+          }}
+        >
           Email
         </Typography>
         <TextField
@@ -55,25 +97,20 @@ const LoginForm: React.FC = () => {
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading || redirecting}
           variant="outlined"
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              bgcolor: 'rgba(255, 255, 255, 0.05)',
-              '&:hover fieldset': {
-                borderColor: 'rgba(59, 130, 246, 0.5)',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#3b82f6',
-              },
-            },
-            '& .MuiOutlinedInput-input': {
-              color: 'white',
-            },
-          }}
+          sx={textFieldStyles}
         />
       </Box>
       
       <Box sx={{ mb: 1.5 }}>
-        <Typography variant="body2" sx={{ mb: 1, color: 'white' }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            mb: 1, 
+            color: resolvedTheme === 'dark' ? 'white' : '#1a2b42',
+            fontWeight: 500,
+            ml: 1
+          }}
+        >
           Password
         </Typography>
         <TextField
@@ -87,29 +124,22 @@ const LoginForm: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading || redirecting}
           variant="outlined"
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              bgcolor: 'rgba(255, 255, 255, 0.05)',
-              '&:hover fieldset': {
-                borderColor: 'rgba(59, 130, 246, 0.5)',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#3b82f6',
-              },
-            },
-            '& .MuiOutlinedInput-input': {
-              color: 'white',
-            },
-          }}
+          sx={textFieldStyles}
         />
       </Box>
       
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>
         <Link
           component="button"
           type="button"
           variant="body2"
-          sx={{ color: '#3b82f6', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+          sx={{ 
+            color: '#3b82f6', 
+            textDecoration: 'none', 
+            '&:hover': { textDecoration: 'underline' },
+            fontWeight: 500,
+            mr: 1
+          }}
           onClick={() => router.push('/auth/forgot-password')}
         >
           Forgot password?
@@ -128,7 +158,15 @@ const LoginForm: React.FC = () => {
           '&:hover': {
             bgcolor: '#2563eb',
           },
-          mb: 2
+          fontSize: '1rem',
+          fontWeight: 600,
+          textTransform: 'none',
+          borderRadius: '10px',
+          boxShadow: resolvedTheme === 'dark' 
+            ? '0 4px 12px rgba(59, 130, 246, 0.3)' 
+            : '0 4px 12px rgba(59, 130, 246, 0.2)',
+          letterSpacing: '0.01em',
+          height: '50px',
         }}
       >
         {isLoading ? (
@@ -138,30 +176,6 @@ const LoginForm: React.FC = () => {
         ) : (
           'Sign In'
         )}
-      </Button>
-      
-      <Box sx={{ textAlign: 'center', mb: 2 }}>
-        <Typography variant="body2" color="gray">
-          OR CONTINUE WITH
-        </Typography>
-      </Box>
-      
-      <Button
-        fullWidth
-        variant="outlined"
-        startIcon={<GoogleIcon />}
-        onClick={handleGoogleLogin}
-        sx={{ 
-          py: 1.5,
-          color: 'white',
-          borderColor: 'rgba(255, 255, 255, 0.2)',
-          '&:hover': {
-            borderColor: 'rgba(255, 255, 255, 0.3)',
-            bgcolor: 'rgba(255, 255, 255, 0.05)'
-          }
-        }}
-      >
-        Google
       </Button>
     </Box>
   );
