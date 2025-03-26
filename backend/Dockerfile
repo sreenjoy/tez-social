@@ -12,7 +12,6 @@ COPY .npmrc ./
 
 # Copy source code before installing to ensure TypeScript can find the configuration
 COPY src/ ./src/
-COPY test/ ./test/
 
 # Install dependencies with legacy-peer-deps to avoid conflicts
 RUN npm install --legacy-peer-deps
