@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, CircularProgress, Alert } from '@mui/material';
+import { TextField, Button, Box, CircularProgress, Alert, Typography, InputAdornment } from '@mui/material';
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
+import GoogleIcon from '@mui/icons-material/Google';
 
 const RegisterForm: React.FC = () => {
   const router = useRouter();
@@ -71,69 +72,108 @@ const RegisterForm: React.FC = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    // Google login functionality would be implemented here
+    alert('Google sign up not implemented yet');
+  };
+
+  const textFieldStyles = {
+    '& .MuiOutlinedInput-root': {
+      bgcolor: 'rgba(255, 255, 255, 0.05)',
+      '&:hover fieldset': {
+        borderColor: 'rgba(59, 130, 246, 0.5)',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#3b82f6',
+      },
+    },
+    '& .MuiOutlinedInput-input': {
+      color: 'white',
+    },
+  };
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
       {(error || authError) && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, bgcolor: 'rgba(211, 47, 47, 0.1)', color: '#f44336' }}>
           {error || authError}
         </Alert>
       )}
       
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="username"
-        label="Username"
-        name="username"
-        autoComplete="username"
-        autoFocus
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        disabled={isLoading || redirecting}
-      />
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ mb: 1, color: 'white' }}>
+          Username
+        </Typography>
+        <TextField
+          fullWidth
+          id="username"
+          name="username"
+          placeholder="username"
+          autoComplete="username"
+          autoFocus
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isLoading || redirecting}
+          variant="outlined"
+          sx={textFieldStyles}
+        />
+      </Box>
       
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="email"
-        label="Email Address"
-        name="email"
-        autoComplete="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        disabled={isLoading || redirecting}
-      />
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ mb: 1, color: 'white' }}>
+          Email
+        </Typography>
+        <TextField
+          fullWidth
+          id="email"
+          name="email"
+          placeholder="your.email@example.com"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={isLoading || redirecting}
+          variant="outlined"
+          sx={textFieldStyles}
+        />
+      </Box>
       
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        name="password"
-        label="Password"
-        type="password"
-        id="password"
-        autoComplete="new-password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={isLoading || redirecting}
-        helperText="Must be at least 6 characters long"
-      />
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ mb: 1, color: 'white' }}>
+          Password
+        </Typography>
+        <TextField
+          fullWidth
+          name="password"
+          type="password"
+          id="password"
+          placeholder="••••••••"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={isLoading || redirecting}
+          variant="outlined"
+          sx={textFieldStyles}
+        />
+      </Box>
       
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        name="confirmPassword"
-        label="Confirm Password"
-        type="password"
-        id="confirmPassword"
-        autoComplete="new-password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        disabled={isLoading || redirecting}
-      />
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ mb: 1, color: 'white' }}>
+          Confirm Password
+        </Typography>
+        <TextField
+          fullWidth
+          name="confirmPassword"
+          type="password"
+          id="confirmPassword"
+          placeholder="••••••••"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          disabled={isLoading || redirecting}
+          variant="outlined"
+          sx={textFieldStyles}
+        />
+      </Box>
       
       <Button
         type="submit"
@@ -141,7 +181,14 @@ const RegisterForm: React.FC = () => {
         variant="contained"
         color="primary"
         disabled={isLoading || redirecting}
-        sx={{ mt: 3, mb: 2 }}
+        sx={{ 
+          py: 1.5,
+          bgcolor: '#3b82f6',
+          '&:hover': {
+            bgcolor: '#2563eb',
+          },
+          mb: 2
+        }}
       >
         {isLoading ? (
           <CircularProgress size={24} color="inherit" />
@@ -150,6 +197,30 @@ const RegisterForm: React.FC = () => {
         ) : (
           'Sign Up'
         )}
+      </Button>
+
+      <Box sx={{ textAlign: 'center', mb: 2 }}>
+        <Typography variant="body2" color="gray">
+          OR CONTINUE WITH
+        </Typography>
+      </Box>
+      
+      <Button
+        fullWidth
+        variant="outlined"
+        startIcon={<GoogleIcon />}
+        onClick={handleGoogleLogin}
+        sx={{ 
+          py: 1.5,
+          color: 'white',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          '&:hover': {
+            borderColor: 'rgba(255, 255, 255, 0.3)',
+            bgcolor: 'rgba(255, 255, 255, 0.05)'
+          }
+        }}
+      >
+        Google
       </Button>
     </Box>
   );
