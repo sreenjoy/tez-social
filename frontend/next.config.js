@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Disable strict mode to avoid double rendering in development
   // Enable static optimization
   swcMinify: true,
   // Explicitly define the pages to build
@@ -9,9 +9,9 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://tez-social-production.up.railway.app',
   },
-  // Optimize for production
+  // Optimize for production but keep console for debugging
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: false, // Keep console logs for troubleshooting
   },
   // Handle Material UI styles properly
   transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material'],
@@ -30,12 +30,14 @@ const nextConfig = {
     domains: ['example.com'],
     unoptimized: true,
   },
-  // Production source maps
-  productionBrowserSourceMaps: false,
+  // Production source maps for debugging
+  productionBrowserSourceMaps: true,
   // Experimental features
   experimental: {
     esmExternals: 'loose',
     optimizeCss: true, // This uses critters for CSS optimization
+    // Add app directory
+    appDir: false, // Disable app directory to use pages directory
   },
   // Disable type checking in build for speed
   typescript: {
@@ -45,6 +47,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Rewrites for API
   async rewrites() {
     return [
       {
@@ -53,9 +56,11 @@ const nextConfig = {
       },
     ];
   },
+  // Headers for caching and security
   async headers() {
     return [
       {
+        // Cache static assets
         source: '/:all*(svg|jpg|png|webp|avif|ico|woff|woff2)',
         headers: [
           {
@@ -65,6 +70,17 @@ const nextConfig = {
         ],
       },
       {
+        // Disable cache for HTML and JS files to avoid stale content
+        source: '/:all*(js|html)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+      {
+        // Security headers for all paths
         source: '/:path*',
         headers: [
           {
