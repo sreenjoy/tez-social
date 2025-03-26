@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "buildCommand": "cd frontend && npm install && npm run clean && npm run build",
   "devCommand": "cd frontend && npm run dev",
   "outputDirectory": "frontend/.next",
   "cleanUrls": true,
@@ -29,5 +29,8 @@
         }
       ]
     }
-  ]
+  ],
+  "buildCache": {
+    "disable": true
+  }
 }

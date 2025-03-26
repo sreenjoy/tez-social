@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "tez-social-frontend",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run clean && npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "framework": "nextjs",
@@ -29,5 +29,8 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ]
+  ],
+  "buildCache": {
+    "disable": true
+  }
 } 
