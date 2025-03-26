@@ -13,7 +13,7 @@ interface AuthState {
   isInitialized: boolean;
   
   // Actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => void;
   register: (userData: any) => Promise<void>;
   setAuthState: (authState: Partial<AuthState>) => void;
@@ -34,7 +34,7 @@ const useAuthStore = create<AuthState>()(
       isInitialized: false,
       
       // Login with email and password
-      login: async (email, password) => {
+      login: async (email, password, rememberMe = false) => {
         try {
           set({ isLoading: true, error: null });
           
@@ -49,6 +49,13 @@ const useAuthStore = create<AuthState>()(
           localStorage.setItem('token', accessToken);
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('user', JSON.stringify(user));
+          
+          // If rememberMe is true, set a flag in localStorage
+          if (rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+          } else {
+            localStorage.removeItem('rememberMe');
+          }
           
           set({ 
             isAuthenticated: true,

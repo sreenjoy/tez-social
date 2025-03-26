@@ -3,12 +3,35 @@ import { Box, Button, Typography, IconButton, Menu, MenuItem, Tooltip } from '@m
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
 import { useTheme } from 'next-themes';
+import ThemeToggle from './ThemeToggle';
 
 // Define props interface
 interface AuthLayoutProps {
   children: React.ReactNode;
   initialTab?: 'signin' | 'signup';
 }
+
+// Feature point component
+const FeaturePoint: React.FC<{ icon: React.ReactNode; title: string }> = ({ icon, title }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, zIndex: 1 }}>
+    <Box sx={{ 
+      width: 48, 
+      height: 48, 
+      borderRadius: '50%', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      mr: 2.5,
+      background: 'rgba(59, 130, 246, 0.12)',
+      border: '1.5px solid rgba(59, 130, 246, 0.3)'
+    }}>
+      {icon}
+    </Box>
+    <Typography variant="body1" sx={{ color: 'white', fontWeight: 500 }}>
+      {title}
+    </Typography>
+  </Box>
+);
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin' }) => {
   const router = useRouter();
@@ -69,7 +92,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 dark:bg-[#111827]">
+    <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Theme Toggle */}
       <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
         <Tooltip title="Change theme">
@@ -78,10 +101,10 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             size="small"
             onClick={openThemeMenu}
             sx={{
-              color: 'white',
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              color: theme === 'dark' ? 'white' : '#1A2235',
+              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.15)',
+                backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
               }
             }}
           >
@@ -123,10 +146,12 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
           padding: 4,
           paddingTop: 6,
           position: 'relative',
-          background: 'linear-gradient(135deg, #0f172a 0%, #111827 100%)',
+          background: theme === 'dark' ? '#1A2235' : '#1f4287',
+          backgroundImage: theme === 'dark' 
+            ? 'linear-gradient(135deg, #1A2235 0%, #0f172a 100%)' 
+            : 'linear-gradient(135deg, #1f4287 0%, #071e56 100%)',
           overflow: 'hidden'
         }}
-        className="dark:bg-[#111827]"
       >
         {/* Animated background patterns */}
         <Box sx={{ 
@@ -146,10 +171,10 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
         }} />
         
         {/* Logo and Brand */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, zIndex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, zIndex: 1 }}>
           <Box sx={{ 
-            width: 44, 
-            height: 44, 
+            width: 36, 
+            height: 36, 
             borderRadius: '50%', 
             display: 'flex', 
             alignItems: 'center', 
@@ -158,7 +183,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             background: 'rgba(59, 130, 246, 0.1)',
             border: '1.5px solid #3b82f6'
           }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6ZM20 6L12 11L4 6H20ZM20 18H4V8L12 13L20 8V18Z" fill="#3b82f6"/>
             </svg>
           </Box>
@@ -167,7 +192,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             sx={{ 
               color: '#3b82f6',
               fontWeight: 700,
-              fontSize: '1.75rem',
+              fontSize: '1.35rem',
               background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
               backgroundClip: 'text',
               textFillColor: 'transparent',
@@ -180,100 +205,56 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
         </Box>
         
         {/* Hero Title */}
-        <Box sx={{ mt: 10, mb: 6, zIndex: 1 }}>
+        <Box sx={{ mt: 8, mb: 6, zIndex: 1 }}>
           <Typography 
             variant="h3" 
             sx={{ 
               color: 'white', 
               fontWeight: 700, 
               mb: 2,
-              fontSize: { xs: '2.25rem', lg: '3rem' },
+              fontSize: { xs: '1.75rem', lg: '2.1rem' },
               lineHeight: 1.2,
             }}
           >
             Streamline your Telegram business communication
           </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', mb: 4 }}>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem', mb: 4 }}>
             Organize leads, manage conversations, and never miss an opportunity.
           </Typography>
         </Box>
         
-        {/* Feature List */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, zIndex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ 
-              width: 42, 
-              height: 42, 
-              borderRadius: '10px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              background: 'rgba(59, 130, 246, 0.12)',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)',
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15 8H9V6C9 4.34 10.34 3 12 3C13.66 3 15 4.34 15 6V8Z" fill="#3b82f6"/>
+        {/* Feature Points */}
+        <Box sx={{ mb: 6, zIndex: 1 }}>
+          <FeaturePoint 
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 600, mb: 0.5, fontSize: '1rem' }}>
-                Privacy-First: No message storage
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' }}>
-                Your messages stay on Telegram, we only track the business context.
-              </Typography>
-            </Box>
-          </Box>
+            } 
+            title="Privacy-First: No message storage" 
+          />
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ 
-              width: 42, 
-              height: 42, 
-              borderRadius: '10px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              background: 'rgba(59, 130, 246, 0.12)',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)',
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3.05 13.05C2.76 12.76 2.76 12.24 3.05 11.95L11.16 3.84C11.45 3.55 11.97 3.55 12.26 3.84L20.37 11.95C20.66 12.24 20.66 12.76 20.37 13.05L12.26 21.16C11.97 21.45 11.45 21.45 11.16 21.16L3.05 13.05ZM12 8C10.9 8 10 8.9 10 10C10 11.1 10.9 12 12 12C13.1 12 14 11.1 14 10C14 8.9 13.1 8 12 8Z" fill="#3b82f6"/>
+          <FeaturePoint 
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 600, mb: 0.5, fontSize: '1rem' }}>
-                Never miss a lead in your groups
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' }}>
-                Automatically track inquiries and leads from all your channels.
-              </Typography>
-            </Box>
-          </Box>
+            } 
+            title="Never miss a lead in your groups" 
+          />
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ 
-              width: 42, 
-              height: 42, 
-              borderRadius: '10px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              background: 'rgba(59, 130, 246, 0.12)',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)',
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z" fill="#3b82f6"/>
+          <FeaturePoint 
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
               </svg>
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 600, mb: 0.5, fontSize: '1rem' }}>
-                Complete visibility of your deal flow
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' }}>
-                Track your entire sales pipeline and monitor conversion rates.
-              </Typography>
-            </Box>
-          </Box>
+            } 
+            title="Complete visibility of your deal flow" 
+          />
         </Box>
         
         {/* Footer */}
@@ -292,11 +273,11 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
           justifyContent: 'center',
           width: { xs: '100%', md: '50%' },
           padding: { xs: 2, sm: 4 },
-          background: 'linear-gradient(135deg, #0f172a 0%, #111827 100%)',
+          background: theme === 'dark' ? '#111827' : '#f8f9fa',
           position: 'relative',
           overflow: 'hidden',
+          textAlign: 'center'
         }}
-        className="dark:bg-[#1f2937]"
       >
         {/* Blurred gradient spheres for design */}
         <Box sx={{
@@ -325,130 +306,52 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
         
         {/* Auth form container */}
         <Box sx={{ 
-          maxWidth: 480, 
-          width: '100%', 
-          margin: '0 auto',
-          display: 'flex', 
-          flexDirection: 'column',
+          maxWidth: '400px', 
+          margin: '0 auto', 
+          width: '100%',
           position: 'relative',
           zIndex: 1
         }}>
-          {/* Mobile Logo (visible on small screens) */}
-          <Box 
-            sx={{ 
-              display: { xs: 'flex', md: 'none' }, 
-              alignItems: 'center', 
-              mb: 4 
-            }}
-          >
-            <Box sx={{ 
-              width: 40, 
-              height: 40, 
-              borderRadius: '50%', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              mr: 1,
-              background: 'rgba(59, 130, 246, 0.1)',
-              border: '1.5px solid #3b82f6'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6ZM20 6L12 11L4 6H20ZM20 18H4V8L12 13L20 8V18Z" fill="#3b82f6"/>
-              </svg>
-            </Box>
-            <Typography variant="h5" sx={{ 
-              color: '#3b82f6', 
-              fontWeight: 700,
-              background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
-              backgroundClip: 'text',
-              textFillColor: 'transparent',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-              tez.social
-            </Typography>
-          </Box>
-          
-          <Typography 
-            variant="h4" 
-            sx={{ 
-              color: 'white', 
-              mb: 1, 
-              fontWeight: 700,
-              background: 'linear-gradient(90deg, #ffffff, #e5e7eb)',
-              backgroundClip: 'text',
-              textFillColor: 'transparent',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Welcome to tez.social
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 3 }}>
-            Your all-in-one solution for managing customer relationships
-          </Typography>
-          
-          {/* Tab Buttons */}
-          <Box sx={{ display: 'flex', mb: 3 }}>
-            <Button
-              variant={tab === 'signin' ? 'contained' : 'outlined'}
-              color="primary"
-              sx={{ 
-                flex: 1, 
-                py: 1.5, 
-                borderRadius: 2, 
-                borderTopRightRadius: 0, 
-                borderBottomRightRadius: 0,
-                textTransform: 'none',
-                fontSize: '1rem',
-                fontWeight: 600,
-                backgroundColor: tab === 'signin' ? '#3b82f6' : 'transparent',
-                borderColor: '#3b82f6',
-                '&:hover': {
-                  backgroundColor: tab === 'signin' ? '#2563eb' : 'rgba(59, 130, 246, 0.08)'
-                }
-              }}
+          {/* Tabs for switching between sign in and sign up */}
+          <Box sx={{ mb: 4, display: 'flex', border: '1px solid', borderColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)', borderRadius: '10px', overflow: 'hidden' }}>
+            <Button 
+              variant={tab === 'signin' ? 'contained' : 'text'}
               onClick={() => setTab('signin')}
+              sx={{ 
+                flexGrow: 1, 
+                py: 1,
+                bgcolor: tab === 'signin' ? 'primary.main' : 'transparent',
+                color: tab === 'signin' ? 'white' : (theme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)'),
+                '&:hover': {
+                  bgcolor: tab === 'signin' ? 'primary.dark' : (theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
+                },
+                borderRadius: '10px 0 0 10px',
+                textTransform: 'none',
+              }}
             >
               Sign In
             </Button>
-            <Button
-              variant={tab === 'signup' ? 'contained' : 'outlined'}
-              color="primary"
-              sx={{ 
-                flex: 1, 
-                py: 1.5, 
-                borderRadius: 2, 
-                borderTopLeftRadius: 0, 
-                borderBottomLeftRadius: 0,
-                textTransform: 'none',
-                fontSize: '1rem',
-                fontWeight: 600,
-                backgroundColor: tab === 'signup' ? '#3b82f6' : 'transparent',
-                borderColor: '#3b82f6',
-                '&:hover': {
-                  backgroundColor: tab === 'signup' ? '#2563eb' : 'rgba(59, 130, 246, 0.08)'
-                }
-              }}
+            <Button 
+              variant={tab === 'signup' ? 'contained' : 'text'}
               onClick={() => setTab('signup')}
+              sx={{ 
+                flexGrow: 1, 
+                py: 1,
+                bgcolor: tab === 'signup' ? 'primary.main' : 'transparent',
+                color: tab === 'signup' ? 'white' : (theme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)'),
+                '&:hover': {
+                  bgcolor: tab === 'signup' ? 'primary.dark' : (theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
+                },
+                borderRadius: '0 10px 10px 0',
+                textTransform: 'none',
+              }}
             >
               Sign Up
             </Button>
           </Box>
           
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 2 }}>
-            {tab === 'signin' ? 'Sign in to your account to continue' : 'Create your account to get started'}
-          </Typography>
-          
           {/* Auth form */}
           {children}
-          
-          {/* Footer */}
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8125rem' }}>
-              <a className="text-blue-400 hover:underline" href="/privacy-policy">Privacy Policy</a> • <a className="text-blue-400 hover:underline" href="/terms-of-service">Terms of Service</a>
-            </Typography>
-          </Box>
         </Box>
       </Box>
     </div>
