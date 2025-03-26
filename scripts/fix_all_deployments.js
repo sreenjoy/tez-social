@@ -7,6 +7,10 @@
  * 2. Check Railway deployment status
  * 3. Apply fixes to both platforms
  * 4. Keep retrying until everything is green
+ * 
+ * TO USE LOCALLY WITH CREDENTIALS:
+ * 
+ * VERCEL_TOKEN=your_token VERCEL_ORG_ID=your_org_id VERCEL_PROJECT_ID=your_project_id node fix_all_deployments.js
  */
 
 const { createAppAuth } = require('@octokit/auth-app');
@@ -22,6 +26,14 @@ const REPO = 'tez-social';
 const INSTALLATION_ID = 63351866;
 const MAX_RETRIES = 5;
 const RAILWAY_BACKEND_URL = 'https://tez-social-production.up.railway.app';
+
+// Check for environment variables
+const ENV_VERCEL_TOKEN = process.env.VERCEL_TOKEN;
+const ENV_VERCEL_ORG_ID = process.env.VERCEL_ORG_ID;
+const ENV_VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
+
+// If all environment variables are present, use them directly
+const hasLocalVercelCredentials = ENV_VERCEL_TOKEN && ENV_VERCEL_ORG_ID && ENV_VERCEL_PROJECT_ID;
 
 /**
  * Make an HTTP request to any API
@@ -78,14 +90,14 @@ async function checkVercelDeployments(octokit, secrets) {
   try {
     console.log('\n🔍 Checking Vercel deployments...');
 
-    // Try to get secrets from GitHub
-    let vercelToken = secrets.VERCEL_TOKEN;
-    let vercelOrgId = secrets.VERCEL_ORG_ID;
-    let vercelProjectId = secrets.VERCEL_PROJECT_ID;
+    // Try to get secrets from environment variables first, then from passed secrets
+    let vercelToken = ENV_VERCEL_TOKEN || secrets.VERCEL_TOKEN;
+    let vercelOrgId = ENV_VERCEL_ORG_ID || secrets.VERCEL_ORG_ID;
+    let vercelProjectId = ENV_VERCEL_PROJECT_ID || secrets.VERCEL_PROJECT_ID;
 
-    // Create temporary env file to store secrets
+    // Check if we have complete credentials
     if (vercelToken && vercelOrgId && vercelProjectId) {
-      console.log('✅ Using Vercel credentials from GitHub secrets');
+      console.log('✅ Using Vercel credentials from environment variables or GitHub secrets');
       
       // Make API request to Vercel
       const response = await makeRequest({
@@ -103,7 +115,7 @@ async function checkVercelDeployments(octokit, secrets) {
         
         // Check for errors
         const failedDeployments = response.data.deployments.filter(d => 
-          d.state === 'ERROR' || (d.state === 'READY' && d.target === 'production' && d.alias.some(a => a.error))
+          d.state === 'ERROR' || (d.state === 'READY' && d.target === 'production' && d.alias && d.alias.some(a => a.error))
         );
         
         if (failedDeployments.length > 0) {
@@ -114,7 +126,7 @@ async function checkVercelDeployments(octokit, secrets) {
             console.log(`Attempting to fix deployment: ${deployment.uid}`);
             await triggerFixWorkflow(octokit, 'fix-vercel', {
               deployment_id: deployment.uid,
-              deployment_url: deployment.url
+              deployment_url: deployment.url || ''
             });
           }
           
@@ -133,7 +145,11 @@ async function checkVercelDeployments(octokit, secrets) {
         return false;
       }
     } else {
-      console.log('⚠️ Vercel credentials not available locally, triggering fix workflow with auto-detect');
+      console.log('⚠️ Vercel credentials not available, triggering fix workflow with auto-detect');
+      // Show a hint on how to provide credentials
+      console.log('ℹ️  To use local credentials, run with:');
+      console.log('VERCEL_TOKEN=your_token VERCEL_ORG_ID=your_org_id VERCEL_PROJECT_ID=your_project_id node fix_all_deployments.js');
+      
       // Trigger workflow with auto-detect
       await triggerFixWorkflow(octokit, 'fix-vercel', {
         deployment_id: 'auto-detect',
