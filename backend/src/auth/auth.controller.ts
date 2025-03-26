@@ -29,41 +29,6 @@ export class AuthController {
     private configService: ConfigService,
   ) {}
 
-  @Post('dev/reset-password')
-  @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() body: { email: string; newPassword: string }) {
-    try {
-      if (!body.email || !body.newPassword) {
-        throw new BadRequestException('Email and new password are required');
-      }
-      
-      const result = await this.authService.resetUserPassword(body.email, body.newPassword);
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Success',
-        data: result,
-        timestamp: new Date().toISOString(),
-        path: '/api/auth/dev/reset-password',
-      };
-    } catch (error) {
-      this.logger.error(`Reset password error: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  // Test endpoint for debugging token validation
-  @Get('test-auth')
-  @UseGuards(JwtAuthGuard)
-  testAuth(@Req() req) {
-    this.logger.log(`Test auth endpoint called with user: ${JSON.stringify(req.user)}`);
-    return {
-      success: true,
-      message: 'Authentication is working correctly',
-      user: req.user,
-      timestamp: new Date().toISOString()
-    };
-  }
-
   @Post('register')
   @UsePipes(new ValidationPipe({ 
     transform: true, 
@@ -71,14 +36,11 @@ export class AuthController {
     forbidNonWhitelisted: true,
     exceptionFactory: (errors) => {
       const messages = errors.map(error => {
-        console.log('Validation error:', JSON.stringify(error));
         return {
           property: error.property,
           constraints: error.constraints
         };
       });
-      
-      console.log('All validation errors:', JSON.stringify(messages));
       
       return new BadRequestException({
         message: 'Validation failed',
@@ -88,7 +50,7 @@ export class AuthController {
   }))
   async register(@Body() registerDto: RegisterDto) {
     try {
-      this.logger.log(`Registration attempt with data: ${JSON.stringify(registerDto)}`);
+      this.logger.log(`Registration attempt for email: ${registerDto.email}`);
       const result = await this.authService.register(registerDto);
       return {
         statusCode: HttpStatus.CREATED,
@@ -130,7 +92,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Req() req: any) {
     try {
-      this.logger.debug(`Refresh token user object: ${JSON.stringify(req.user)}`);
       const userId = req.user.userId;
       const result = await this.authService.refreshToken(userId);
       return {
@@ -164,8 +125,6 @@ export class AuthController {
   @Get('me')
   async getProfile(@Req() req) {
     try {
-      this.logger.log(`Get profile called for user id: ${req.user.userId}`);
-      
       const { userId, email } = req.user;
       
       const user = await this.authService.validateUser(userId, email);
@@ -214,7 +173,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getOnboardingStatus(@Req() req: any) {
     try {
-      this.logger.debug(`Onboarding status user object: ${JSON.stringify(req.user)}`);
       const result = await this.authService.getUserOnboardingStatus(req.user.userId);
       return {
         statusCode: HttpStatus.OK,
@@ -225,24 +183,6 @@ export class AuthController {
       };
     } catch (error) {
       this.logger.error(`Get onboarding status error: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  @Post('dev/verify-all-users')
-  @HttpCode(HttpStatus.OK)
-  async verifyAllUsers() {
-    try {
-      const result = await this.authService.verifyAllUsers();
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Success',
-        data: result,
-        timestamp: new Date().toISOString(),
-        path: '/api/auth/dev/verify-all-users',
-      };
-    } catch (error) {
-      this.logger.error(`Verify all users error: ${error.message}`, error.stack);
       throw error;
     }
   }
