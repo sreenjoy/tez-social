@@ -1,8 +1,27 @@
-# Setting Up GitHub Secrets for Deployment Monitoring
+# GitHub Secrets Setup Guide
 
-To make the deployment monitoring system work correctly, you need to set up the following secrets in your GitHub repository:
+This document provides instructions for setting up the required secrets for the deployment monitoring workflows.
 
 ## Required Secrets
+
+The following secrets need to be set up in your GitHub repository:
+
+- `APP_ID`: Your GitHub App's ID
+- `APP_PRIVATE_KEY`: The private key for your GitHub App
+- `VERCEL_TOKEN`: Your Vercel personal access token
+- `VERCEL_ORG_ID`: Your Vercel organization ID
+- `VERCEL_PROJECT_ID`: Your Vercel project ID
+
+## Automation Schedule
+
+The deployment monitoring system is configured to run:
+- Every 30 minutes automatically (via GitHub Actions schedule)
+- When code is pushed to the main branch that affects the frontend, backend, or workflows
+- Manually via the Actions tab when needed
+
+## Authentication Methods
+
+You have three options for authenticating the workflow:
 
 ### For Vercel Integration
 
