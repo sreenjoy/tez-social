@@ -23,24 +23,19 @@ const nextConfig = {
       transform: '@mui/icons-material/{{member}}',
     },
   },
-  // Configure output for Vercel deployment
-  // output: 'export',
+  // Optimize output
+  // output: 'export', // Commented out to fix static export issues
   // Configure images
   images: {
     domains: ['example.com'],
     unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
   },
   // Production source maps
   productionBrowserSourceMaps: false,
   // Experimental features
   experimental: {
     esmExternals: 'loose',
+    optimizeCss: true, // This uses critters for CSS optimization
   },
   // Disable type checking in build for speed
   typescript: {
@@ -50,17 +45,11 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Ensure SSR errors are handled gracefully
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
-  },
-  // Configure API rewrites for production
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL || 'https://tez-social-production.up.railway.app/api/:path*',
+        destination: 'https://tez-social-production.up.railway.app/api/:path*',
       },
     ];
   },
@@ -86,8 +75,8 @@ const nextConfig = {
       },
     ];
   },
-  // distDir: 'out',
-  // trailingSlash: true,
+  // distDir: 'out', // Commented out to use default .next directory
+  // trailingSlash: true, // Commented out as it's not needed without static export
 }
 
 module.exports = nextConfig 
