@@ -7,7 +7,7 @@ const nextConfig = {
   poweredByHeader: false,
   // Ensure proper environment variable handling
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://tez-social-production.up.railway.app',
   },
   // Optimize for production
   compiler: {

@@ -13,73 +13,7 @@ on:
         default: '1'
 
 jobs:
-  deploy-backend:
-    runs-on: ubuntu-latest
-    outputs:
-      backend_url: ${{ steps.backend_deploy.outputs.url }}
-      backend_deployment_id: ${{ steps.get_backend_deployment_id.outputs.deployment_id }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: |
-          cd backend
-          npm ci
-
-      - name: Build backend
-        run: |
-          cd backend
-          npm run build
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
-      - name: Deploy backend to Vercel
-        id: backend_deploy
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
-          # Set environment variables for backend
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: |
-          cd backend
-          echo "Deploying backend to Vercel with debug logs..."
-          DEPLOY_OUTPUT=$(vercel --debug --token ${VERCEL_TOKEN} --prod --yes 2>&1)
-          echo "$DEPLOY_OUTPUT"
-          
-          # Extract deployment URL from output
-          DEPLOYMENT_URL=$(echo "$DEPLOY_OUTPUT" | grep -o 'https://[a-zA-Z0-9.-]*\.vercel\.app' | head -1 || echo "")
-          if [ -z "$DEPLOYMENT_URL" ]; then
-            echo "Failed to extract backend deployment URL"
-            exit 1
-          fi
-          echo "Backend deployed to: $DEPLOYMENT_URL"
-          echo "::set-output name=url::$DEPLOYMENT_URL"
-          
-      - name: Get backend deployment ID
-        id: get_backend_deployment_id
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-        run: |
-          sleep 5
-          echo "Fetching latest backend deployment ID..."
-          DEPLOYMENT_ID=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=${{ secrets.VERCEL_BACKEND_PROJECT_ID }}" | jq -r '.deployments[0].uid')
-          echo "::set-output name=deployment_id::$DEPLOYMENT_ID"
-          echo "Latest backend deployment ID: $DEPLOYMENT_ID"
-
   deploy-frontend:
-    needs: deploy-backend
     runs-on: ubuntu-latest
     outputs:
       frontend_url: ${{ steps.frontend_deploy.outputs.url }}
@@ -96,7 +30,7 @@ jobs:
       - name: Set backend URL in frontend environment
         run: |
           cd frontend
-          echo "NEXT_PUBLIC_API_URL=${{ needs.deploy-backend.outputs.backend_url }}" > .env.production
+          echo "NEXT_PUBLIC_API_URL=https://tez-social-production.up.railway.app" > .env.production
 
       - name: Install dependencies
         run: |
@@ -145,13 +79,13 @@ jobs:
           echo "Latest frontend deployment ID: $DEPLOYMENT_ID"
 
   check-deployment:
-    needs: [deploy-backend, deploy-frontend]
+    needs: [deploy-frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Check deployment status
         run: |
-          echo "Backend URL: ${{ needs.deploy-backend.outputs.backend_url }}"
           echo "Frontend URL: ${{ needs.deploy-frontend.outputs.frontend_url }}"
+          echo "Backend URL: https://tez-social-production.up.railway.app"
           
           # Wait a bit for deployment to propagate
           sleep 10
@@ -165,7 +99,7 @@ jobs:
           fi
           
           # Test if the backend is accessible
-          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ needs.deploy-backend.outputs.backend_url }})
+          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://tez-social-production.up.railway.app)
           if [ "$BACKEND_STATUS" = "200" ]; then
             echo "✅ Backend is accessible (HTTP $BACKEND_STATUS)"
           else
@@ -178,4 +112,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### URLs" >> $GITHUB_STEP_SUMMARY
           echo "- 🌐 **Frontend**: [${{ needs.deploy-frontend.outputs.frontend_url }}](${{ needs.deploy-frontend.outputs.frontend_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "- 🖥️ **Backend**: [${{ needs.deploy-backend.outputs.backend_url }}](${{ needs.deploy-backend.outputs.backend_url }})" >> $GITHUB_STEP_SUMMARY 
+          echo "- 🖥️ **Backend**: [https://tez-social-production.up.railway.app](https://tez-social-production.up.railway.app)" >> $GITHUB_STEP_SUMMARY 
