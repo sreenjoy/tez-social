@@ -397,8 +397,13 @@ jobs:
           
           # Get diff stats for last few commits
           git diff HEAD~5..HEAD --stat > recent_changes.txt
+          
+          # Create empty files so upload doesn't fail if they don't exist
+          touch vercel_logs.json vercel_logs.txt vercel_error_logs.txt railway_logs.txt
 
       - name: Create GitHub issue with deployment logs
+        id: create_issue
+        continue-on-error: true
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ steps.create-token.outputs.token }}
@@ -413,6 +418,8 @@ jobs:
           filename: .github/ISSUE_TEMPLATE/deployment-error-report.md
 
       - name: Upload log artifacts
+        id: upload_logs
+        continue-on-error: true
         uses: actions/upload-artifact@v2
         with:
           name: deployment-logs
