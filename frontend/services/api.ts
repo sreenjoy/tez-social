@@ -1,9 +1,6 @@
 import axios from 'axios';
 import useAuthStore from '../store/authStore';
 
-// Always use real API in production
-const USE_MOCK_API = false;
-
 // Get the backend URL from environment variables
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tez-social-production.up.railway.app';
 
@@ -68,52 +65,6 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(new Error(errorMessage));
   }
 );
-
-// Always use real API in production
-export const shouldUseMockApi = () => {
-  return false; // Never use mock API in production
-};
-
-// Simple mock responses for development only
-const mockResponses = {
-  // These are kept for reference but won't be used in production
-  register: async (userData: any) => {
-    return {
-      user: {
-        id: '1',
-        username: userData.username,
-        email: userData.email
-      },
-      accessToken: 'mock-token'
-    };
-  },
-  login: async () => {
-    return {
-      user: {
-        id: '1',
-        username: 'demo',
-        email: 'demo@example.com'
-      },
-      accessToken: 'mock-token'
-    };
-  },
-  logout: async () => ({ success: true }),
-  getCurrentUser: async () => ({
-    id: '1',
-    username: 'demo',
-    email: 'demo@example.com'
-  }),
-  verifyEmail: async () => ({ success: true }),
-  resendVerification: async () => ({ success: true }),
-  getOnboardingStatus: async () => ({
-    isOnboarded: false,
-    steps: {
-      profileCompleted: false,
-      telegramConnected: false,
-      companyCreated: false
-    }
-  })
-};
 
 // API service for authentication related endpoints
 export const authApi = {
@@ -232,84 +183,6 @@ export const userApi = {
   }
 };
 
-// API service for post related endpoints
-export const postApi = {
-  // Get feed posts
-  getFeed: async (page = 1, limit = 10) => {
-    const response = await axiosInstance.get(`/posts/feed?page=${page}&limit=${limit}`);
-    return response.data;
-  },
-  
-  // Create a new post
-  createPost: async (postData: any) => {
-    const response = await axiosInstance.post('/posts', postData);
-    return response.data;
-  },
-  
-  // Get a single post
-  getPost: async (postId: string) => {
-    const response = await axiosInstance.get(`/posts/${postId}`);
-    return response.data;
-  },
-  
-  // Delete a post
-  deletePost: async (postId: string) => {
-    const response = await axiosInstance.delete(`/posts/${postId}`);
-    return response.data;
-  },
-  
-  // Like a post
-  likePost: async (postId: string) => {
-    const response = await axiosInstance.post(`/posts/${postId}/like`);
-    return response.data;
-  },
-  
-  // Unlike a post
-  unlikePost: async (postId: string) => {
-    const response = await axiosInstance.delete(`/posts/${postId}/like`);
-    return response.data;
-  },
-  
-  // Get post comments
-  getComments: async (postId: string, page = 1, limit = 10) => {
-    const response = await axiosInstance.get(`/posts/${postId}/comments?page=${page}&limit=${limit}`);
-    return response.data;
-  },
-  
-  // Add a comment to a post
-  addComment: async (postId: string, content: string) => {
-    const response = await axiosInstance.post(`/posts/${postId}/comments`, { content });
-    return response.data;
-  },
-};
-
-// API service for Telegram integration
-export const telegramApi = {
-  // Get connection status
-  getConnectionStatus: async () => {
-    const response = await axiosInstance.get('/telegram/status');
-    return response.data;
-  },
-  
-  // Connect Telegram account with phone number
-  connect: async (phoneNumber: string) => {
-    const response = await axiosInstance.post('/telegram/connect', { phoneNumber });
-    return response.data;
-  },
-  
-  // Verify code sent to Telegram
-  verifyCode: async (code: string) => {
-    const response = await axiosInstance.post('/telegram/verify', { code });
-    return response.data;
-  },
-  
-  // Get Telegram contacts
-  getContacts: async (page = 1, limit = 20) => {
-    const response = await axiosInstance.get(`/telegram/contacts?page=${page}&limit=${limit}`);
-    return response.data;
-  },
-};
-
 // API service for company related endpoints
 export const companyApi = {
   // Create a new company
@@ -328,7 +201,7 @@ export const companyApi = {
   getCompanyById: async (companyId: string) => {
     const response = await axiosInstance.get(`/company/${companyId}`);
     return response.data;
-  },
+  }
 };
 
 // API service for pipeline related endpoints
@@ -373,7 +246,7 @@ export const pipelineApi = {
   reorderStages: async (pipelineId: string, stageOrder: string[]) => {
     const response = await axiosInstance.put(`/pipeline/${pipelineId}/stages/reorder`, { order: stageOrder });
     return response.data;
-  },
+  }
 };
 
 // API service for deal related endpoints
@@ -383,54 +256,81 @@ export const dealApi = {
     const response = await axiosInstance.get(`/deal/by-stage/${stageId}`);
     return response.data;
   },
-
+  
   // Get deals by pipeline
   getDealsByPipeline: async (pipelineId: string) => {
     const response = await axiosInstance.get(`/deal/by-pipeline/${pipelineId}`);
     return response.data;
   },
-
+  
   // Get deal by ID
   getDealById: async (id: string) => {
     const response = await axiosInstance.get(`/deal/${id}`);
     return response.data;
   },
-
+  
   // Create new deal
   createDeal: async (dealData: any) => {
     const response = await axiosInstance.post('/deal', dealData);
     return response.data;
   },
-
+  
   // Update deal
   updateDeal: async (id: string, updateData: any) => {
     const response = await axiosInstance.put(`/deal/${id}`, updateData);
     return response.data;
   },
-
+  
   // Move deal to stage
   moveDealToStage: async (id: string, stageId: string) => {
     const response = await axiosInstance.put(`/deal/${id}/move`, { stageId });
     return response.data;
   },
-
+  
   // Delete deal
   deleteDeal: async (id: string) => {
     const response = await axiosInstance.delete(`/deal/${id}`);
     return response.data;
   },
-
+  
   // Get tags by company
   getTags: async () => {
     const response = await axiosInstance.get('/deal/tags/company');
     return response.data;
   },
-
+  
   // Create new tag
   createTag: async (tagData: any) => {
     const response = await axiosInstance.post('/deal/tags', tagData);
     return response.data;
   }
+};
+
+// API service for Telegram integration
+export const telegramApi = {
+  // Get connection status
+  getConnectionStatus: async () => {
+    const response = await axiosInstance.get('/telegram/status');
+    return response.data;
+  },
+  
+  // Connect Telegram account with phone number
+  connect: async (phoneNumber: string) => {
+    const response = await axiosInstance.post('/telegram/connect', { phoneNumber });
+    return response.data;
+  },
+  
+  // Verify code sent to Telegram
+  verifyCode: async (code: string) => {
+    const response = await axiosInstance.post('/telegram/verify', { code });
+    return response.data;
+  },
+  
+  // Get Telegram contacts
+  getContacts: async (page = 1, limit = 20) => {
+    const response = await axiosInstance.get(`/telegram/contacts?page=${page}&limit=${limit}`);
+    return response.data;
+  },
 };
 
 // Default export for the axios instance
