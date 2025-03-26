@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, CircularProgress, Alert } from '@mui/material';
+import { TextField, Button, Box, CircularProgress, Alert, InputAdornment, IconButton } from '@mui/material';
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
 
@@ -13,6 +13,8 @@ const RegisterForm: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [redirecting, setRedirecting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,74 +73,167 @@ const RegisterForm: React.FC = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
       {(error || authError) && (
-        <Alert severity="error" sx={{ mb: 1 }}>
+        <Alert severity="error" sx={{ mb: 1, py: 0.5, fontSize: 13 }}>
           {error || authError}
         </Alert>
       )}
       
-      <TextField
-        margin="dense"
-        required
-        fullWidth
-        id="username"
-        label="Username"
-        name="username"
-        autoComplete="username"
-        autoFocus
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        disabled={isLoading || redirecting}
-        size="small"
-      />
+      <Box sx={{ mb: 1 }}>
+        <label htmlFor="username" className="block text-white text-sm mb-1">Username</label>
+        <TextField
+          fullWidth
+          id="username"
+          name="username"
+          autoComplete="username"
+          autoFocus
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isLoading || redirecting}
+          size="small"
+          variant="outlined"
+          inputProps={{
+            className: 'bg-[#111827]/20 text-white'
+          }}
+          sx={{ 
+            '.MuiOutlinedInput-root': { 
+              borderRadius: 1.5,
+              backgroundColor: '#111827',
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#3b82f6'
+              }
+            }
+          }}
+        />
+      </Box>
       
-      <TextField
-        margin="dense"
-        required
-        fullWidth
-        id="email"
-        label="Email Address"
-        name="email"
-        autoComplete="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        disabled={isLoading || redirecting}
-        size="small"
-      />
+      <Box sx={{ mb: 1 }}>
+        <label htmlFor="email" className="block text-white text-sm mb-1">Email</label>
+        <TextField
+          fullWidth
+          id="email"
+          name="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={isLoading || redirecting}
+          size="small"
+          variant="outlined"
+          inputProps={{
+            className: 'bg-[#111827]/20 text-white'
+          }}
+          sx={{ 
+            '.MuiOutlinedInput-root': { 
+              borderRadius: 1.5,
+              backgroundColor: '#111827',
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#3b82f6'
+              }
+            }
+          }}
+        />
+      </Box>
       
-      <TextField
-        margin="dense"
-        required
-        fullWidth
-        name="password"
-        label="Password"
-        type="password"
-        id="password"
-        autoComplete="new-password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={isLoading || redirecting}
-        helperText="Must be at least 6 characters long"
-        FormHelperTextProps={{ sx: { mt: 0.5, mb: 0 } }}
-        size="small"
-      />
+      <Box sx={{ mb: 1 }}>
+        <label htmlFor="password" className="block text-white text-sm mb-1">Password</label>
+        <TextField
+          fullWidth
+          name="password"
+          type={showPassword ? "text" : "password"}
+          id="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={isLoading || redirecting}
+          size="small"
+          variant="outlined"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={togglePasswordVisibility}
+                  edge="end"
+                  size="small"
+                  sx={{ color: 'gray' }}
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  )}
+                </IconButton>
+              </InputAdornment>
+            ),
+            className: 'bg-[#111827]/20 text-white'
+          }}
+          sx={{ 
+            '.MuiOutlinedInput-root': { 
+              borderRadius: 1.5,
+              backgroundColor: '#111827',
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#3b82f6'
+              }
+            }
+          }}
+        />
+        <p className="text-xs text-gray-400 mt-0.5">Must be at least 6 characters</p>
+      </Box>
       
-      <TextField
-        margin="dense"
-        required
-        fullWidth
-        name="confirmPassword"
-        label="Confirm Password"
-        type="password"
-        id="confirmPassword"
-        autoComplete="new-password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        disabled={isLoading || redirecting}
-        size="small"
-      />
+      <Box sx={{ mb: 2 }}>
+        <label htmlFor="confirmPassword" className="block text-white text-sm mb-1">Confirm Password</label>
+        <TextField
+          fullWidth
+          name="confirmPassword"
+          type={showConfirmPassword ? "text" : "password"}
+          id="confirmPassword"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          disabled={isLoading || redirecting}
+          size="small"
+          variant="outlined"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={toggleConfirmPasswordVisibility}
+                  edge="end"
+                  size="small"
+                  sx={{ color: 'gray' }}
+                >
+                  {showConfirmPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  )}
+                </IconButton>
+              </InputAdornment>
+            ),
+            className: 'bg-[#111827]/20 text-white'
+          }}
+          sx={{ 
+            '.MuiOutlinedInput-root': { 
+              borderRadius: 1.5,
+              backgroundColor: '#111827',
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#3b82f6'
+              }
+            }
+          }}
+        />
+      </Box>
       
       <Button
         type="submit"
@@ -146,14 +241,20 @@ const RegisterForm: React.FC = () => {
         variant="contained"
         color="primary"
         disabled={isLoading || redirecting}
-        sx={{ mt: 2, mb: 1 }}
+        sx={{ 
+          py: 1, 
+          borderRadius: 1.5,
+          textTransform: 'none',
+          fontWeight: 'bold',
+          fontSize: '1rem'
+        }}
       >
         {isLoading ? (
           <CircularProgress size={24} color="inherit" />
         ) : redirecting ? (
           'Redirecting...'
         ) : (
-          'Sign Up'
+          'Create Account'
         )}
       </Button>
     </Box>
