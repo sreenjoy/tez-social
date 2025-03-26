@@ -212,10 +212,7 @@ jobs:
           workflow: ${{ steps.next_action.outputs.workflow }}.yml
           token: ${{ steps.create-token.outputs.token }}
           inputs: |-
-            {
-              "deployment_id": "${{ steps.check_vercel.outputs.vercel_deployment_id || '' }}",
-              "deployment_url": "${{ steps.check_vercel.outputs.vercel_url || '' }}"
-            }
+            ${{ steps.next_action.outputs.workflow == 'fix-vercel' && format('{{"deployment_id":"{0}","deployment_url":"{1}"}}', steps.check_vercel.outputs.vercel_deployment_id || 'auto-detect', steps.check_vercel.outputs.vercel_url || 'auto-detect') || '{}' }}
 
       - name: Force fix all deployments if multiple checks have failed
         if: github.event_name == 'schedule'
