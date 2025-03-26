@@ -67,8 +67,8 @@ const LoginForm: React.FC = () => {
         </Alert>
       )}
       
-      <Box sx={{ mb: 2 }}>
-        <label htmlFor="email" className={`block text-sm mb-1.5 font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>Email</label>
+      <Box sx={{ mb: 1.75 }}>
+        <label htmlFor="email" className={`block text-sm mb-1 font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>Email</label>
         <TextField
           fullWidth
           id="email"
@@ -97,8 +97,8 @@ const LoginForm: React.FC = () => {
               }
             },
             '.MuiOutlinedInput-input': {
-              padding: '10px 16px',
-              fontSize: '0.9rem',
+              padding: '10px 14px',
+              fontSize: '0.85rem',
               '&::placeholder': {
                 color: isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
                 opacity: 1
@@ -111,8 +111,8 @@ const LoginForm: React.FC = () => {
         />
       </Box>
       
-      <Box sx={{ mb: 2 }}>
-        <label htmlFor="password" className={`block text-sm mb-1.5 font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>Password</label>
+      <Box sx={{ mb: 1.75 }}>
+        <label htmlFor="password" className={`block text-sm mb-1 font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>Password</label>
         <TextField
           fullWidth
           name="password"
@@ -158,8 +158,8 @@ const LoginForm: React.FC = () => {
               }
             },
             '.MuiOutlinedInput-input': {
-              padding: '10px 16px',
-              fontSize: '0.9rem',
+              padding: '10px 14px',
+              fontSize: '0.85rem',
               '&::placeholder': {
                 color: isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
                 opacity: 1
@@ -172,7 +172,7 @@ const LoginForm: React.FC = () => {
         />
       </Box>
 
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ mb: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <FormControlLabel
           control={
             <Checkbox 
@@ -182,14 +182,15 @@ const LoginForm: React.FC = () => {
                 '&.Mui-checked': { 
                   color: '#3b82f6' 
                 },
-                color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' 
+                color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+                padding: '4px' 
               }} 
             />
           }
           label="Remember me"
           sx={{ 
             '.MuiFormControlLabel-label': { 
-              fontSize: '0.8rem',
+              fontSize: '0.75rem',
               color: isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)'
             }
           }}
@@ -200,7 +201,7 @@ const LoginForm: React.FC = () => {
           onClick={() => router.push('/auth/forgot-password')}
           sx={{ 
             textTransform: 'none', 
-            fontSize: '0.8rem', 
+            fontSize: '0.75rem', 
             p: 0,
             minWidth: 'unset',
             fontWeight: 600,
@@ -225,7 +226,7 @@ const LoginForm: React.FC = () => {
           borderRadius: 2,
           textTransform: 'none',
           fontWeight: 'bold',
-          fontSize: '0.9rem',
+          fontSize: '0.85rem',
           background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
           boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.4)',
           '&:hover': {
@@ -258,15 +259,15 @@ const LoginForm: React.FC = () => {
         )}
       </Button>
 
-      <Box sx={{ textAlign: 'center', mt: 2.5 }}>
+      <Box sx={{ textAlign: 'center', mt: 2 }}>
         <Box 
           sx={{ 
-            fontSize: '0.8rem', 
+            fontSize: '0.75rem', 
             color: isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: 0.75
+            gap: 0.5
           }}
         >
           Don't have an account?
@@ -276,7 +277,7 @@ const LoginForm: React.FC = () => {
             onClick={() => router.push('/auth/register')}
             sx={{ 
               textTransform: 'none', 
-              fontSize: '0.8rem', 
+              fontSize: '0.75rem', 
               p: 0,
               minWidth: 'unset',
               fontWeight: 600,
