@@ -36,8 +36,6 @@ const nextConfig = {
   experimental: {
     esmExternals: 'loose',
     optimizeCss: true, // This uses critters for CSS optimization
-    // Add app directory
-    appDir: false, // Disable app directory to use pages directory
   },
   // Disable type checking in build for speed
   typescript: {
