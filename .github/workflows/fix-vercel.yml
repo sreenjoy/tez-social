@@ -4,13 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       deployment_id:
-        description: 'Vercel deployment ID to analyze'
+        description: 'Vercel deployment ID to analyze (or use "auto-detect" to find latest)'
         required: true
         type: string
+        default: 'auto-detect'
       deployment_url:
-        description: 'Vercel deployment URL to analyze'
+        description: 'Vercel deployment URL to analyze (or use "auto-detect" to find latest)'
         required: true
         type: string
+        default: 'auto-detect'
 
 
 # Add permissions needed for GitHub token
@@ -33,19 +35,47 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          
+      - name: Auto-detect latest deployment
+        id: detect_deployment
+        if: ${{ github.event.inputs.deployment_id == 'auto-detect' || github.event.inputs.deployment_url == 'auto-detect' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "Auto-detecting latest deployment..."
+          
+          # Get the latest deployment
+          LATEST_DEPLOYMENT=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID")
+          
+          # Extract deployment details
+          DEPLOYMENT_ID=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].uid')
+          DEPLOYMENT_URL=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].url')
+          
+          echo "Latest deployment ID: $DEPLOYMENT_ID"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          
+          # Set outputs for use in subsequent steps
+          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
 
       - name: Get deployment logs
         id: get_logs
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          echo "Getting logs for deployment ${{ github.event.inputs.deployment_id }}..."
+          # Use auto-detected deployment ID if applicable, otherwise use the input value
+          DEPLOYMENT_ID="${{ steps.detect_deployment.outputs.deployment_id || github.event.inputs.deployment_id }}"
+          DEPLOYMENT_URL="${{ steps.detect_deployment.outputs.deployment_url || github.event.inputs.deployment_url }}"
+          
+          echo "Getting logs for deployment $DEPLOYMENT_ID..."
           
           # Get deployment information
-          DEPLOYMENT_INFO=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/${{ github.event.inputs.deployment_id }}")
+          DEPLOYMENT_INFO=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID")
           
           # Get build logs
-          BUILD_LOGS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments/${{ github.event.inputs.deployment_id }}/events")
+          BUILD_LOGS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID/events")
           
           # Save logs to file
           echo "$BUILD_LOGS" > deployment_logs.json
@@ -86,8 +116,8 @@ jobs:
           echo "## Deployment Logs Analysis" > $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment Information" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deployment ID**: \`${{ github.event.inputs.deployment_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deployment URL**: [${{ github.event.inputs.deployment_url }}](https://${{ github.event.inputs.deployment_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment ID**: \`$DEPLOYMENT_ID\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment URL**: [$DEPLOYMENT_URL](https://$DEPLOYMENT_URL)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "### Error Logs" >> $GITHUB_STEP_SUMMARY
