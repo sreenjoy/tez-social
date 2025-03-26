@@ -6,6 +6,13 @@ on:
     - cron: '*/15 * * * *'
   # Run on deployment events
   deployment_status:
+  # Run on push to main branch
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'  # Avoid recursive triggers from bot fixes
+      - '**.md'
   # Allow manual trigger
   workflow_dispatch:
   # Run when deployment monitor detects issues
@@ -22,6 +29,10 @@ permissions:
 jobs:
   monitor-and-fix:
     runs-on: ubuntu-latest
+    # Add concurrency to prevent multiple runs from interfering
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false  # Don't cancel in-progress runs to ensure monitoring completes
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,6 +47,12 @@ jobs:
       - name: Install dependencies
         run: |
           npm install -g @octokit/rest @octokit/auth-app
+
+      - name: Wait for deployments to start
+        if: github.event_name == 'push'
+        run: |
+          echo "New code pushed. Waiting 30 seconds for deployments to start..."
+          sleep 30
 
       - name: Authenticate as bot
         id: auth
@@ -80,19 +97,51 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          # Check Vercel deployment status
-          DEPLOYMENT_STATUS=$(curl -s \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID&limit=1" \
-            | jq -r '.deployments[0].state')
+          # Function to check deployment status
+          check_deployment() {
+            # Check Vercel deployment status
+            DEPLOYMENT_STATUS=$(curl -s \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v6/deployments?teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID&limit=1" \
+              | jq -r '.deployments[0].state')
+            
+            echo "Vercel deployment status: $DEPLOYMENT_STATUS"
+            echo "deployment_status=$DEPLOYMENT_STATUS" >> $GITHUB_OUTPUT
+            
+            # Check Railway health
+            RAILWAY_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://tez-social-production.up.railway.app/api/health)
+            
+            echo "Railway health status: $RAILWAY_HEALTH"
+            echo "railway_health=$RAILWAY_HEALTH" >> $GITHUB_OUTPUT
+            
+            # Return true if both are ready
+            if [ "$DEPLOYMENT_STATUS" = "READY" ] && [ "$RAILWAY_HEALTH" = "200" ]; then
+              return 0
+            else
+              return 1
+            fi
+          }
           
-          echo "deployment_status=$DEPLOYMENT_STATUS" >> $GITHUB_OUTPUT
+          # Initial check
+          check_deployment
           
-          # Check Railway health
-          RAILWAY_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://tez-social-production.up.railway.app/api/health)
-          
-          echo "railway_health=$RAILWAY_HEALTH" >> $GITHUB_OUTPUT
+          # If triggered by push or deployment event, keep checking for up to 5 minutes
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event_name }}" = "deployment" ] || [ "${{ github.event_name }}" = "deployment_status" ]; then
+            ATTEMPTS=0
+            MAX_ATTEMPTS=30  # 5 minutes with 10-second intervals
+            
+            while ! check_deployment && [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              echo "Deployment not ready. Waiting 10 seconds before next check..."
+              sleep 10
+              ATTEMPTS=$((ATTEMPTS + 1))
+            done
+            
+            if [ $ATTEMPTS -eq $MAX_ATTEMPTS ]; then
+              echo "Deployment did not complete successfully within 5 minutes."
+              exit 1
+            fi
+          fi
 
       - name: Run diagnostic tests
         id: diagnostics
