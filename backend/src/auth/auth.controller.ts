@@ -29,19 +29,6 @@ export class AuthController {
     private configService: ConfigService,
   ) {}
 
-  // Test endpoint for debugging token validation
-  @Get('test-auth')
-  @UseGuards(AuthGuard('jwt'))
-  testAuth(@Req() req) {
-    this.logger.log(`Test auth endpoint called with user: ${JSON.stringify(req.user)}`);
-    return {
-      success: true,
-      message: 'Authentication is working correctly',
-      user: req.user,
-      timestamp: new Date().toISOString()
-    };
-  }
-
   @Post('register')
   @UsePipes(new ValidationPipe({ 
     transform: true, 
@@ -141,10 +128,23 @@ export class AuthController {
   @Get('me')
   async getProfile(@Req() req) {
     try {
-      const { userId } = req.user;
-      const user = await this.authService.validateUser(userId, req.user.email);
+      this.logger.log(`Get profile called for user: ${JSON.stringify(req.user)}`);
+      
+      // Check if we have the userId from the JWT strategy
+      if (!req.user || !req.user.userId) {
+        this.logger.warn(`Invalid user object in request: ${JSON.stringify(req.user)}`);
+        throw new UnauthorizedException('Invalid user session');
+      }
+      
+      const { userId, email } = req.user;
+      
+      // Log what we're trying to validate
+      this.logger.log(`Validating user with userId: ${userId} and email: ${email}`);
+      
+      const user = await this.authService.validateUser(userId, email);
       
       if (!user) {
+        this.logger.warn(`User validation failed for userId: ${userId}`);
         throw new UnauthorizedException('Invalid user session');
       }
       
@@ -157,7 +157,6 @@ export class AuthController {
       };
     } catch (error) {
       this.logger.error(`Get profile error: ${error.message}`, error.stack);
-      this.logger.error(`Email verification error: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -240,5 +239,18 @@ export class AuthController {
       this.logger.error(`Reset password error: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  // Test endpoint for debugging token validation
+  @Get('test-auth')
+  @UseGuards(JwtAuthGuard)
+  testAuth(@Req() req) {
+    this.logger.log(`Test auth endpoint called with user: ${JSON.stringify(req.user)}`);
+    return {
+      success: true,
+      message: 'Authentication is working correctly',
+      user: req.user,
+      timestamp: new Date().toISOString()
+    };
   }
 } 
