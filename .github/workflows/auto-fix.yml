@@ -10,6 +10,12 @@ on:
         description: 'Vercel deployment URL'
         required: true
 
+# Add permissions to allow workflow triggering
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -164,9 +170,16 @@ jobs:
     needs: fix-issue
     runs-on: ubuntu-latest
     steps:
+      - name: Create personal access token
+        id: create-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Trigger deployment workflow again
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: vercel-deploy.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.create-token.outputs.token || secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
           inputs: '{"deploy_attempt": "auto-retry"}' 

@@ -18,6 +18,11 @@ on:
           - vercel
           - railway
 
+# Add permissions to allow workflow triggering
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   trigger-monitor:
     runs-on: ubuntu-latest
@@ -30,11 +35,18 @@ jobs:
           echo "Waiting 3 minutes for deployments to complete..."
           sleep 180
 
+      - name: Create personal access token
+        id: create-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Trigger deployment monitor
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: deployment-monitor.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.create-token.outputs.token || secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
           inputs: |-
             {
               "check_type": "${{ github.event.inputs.check_type || 'all' }}"
