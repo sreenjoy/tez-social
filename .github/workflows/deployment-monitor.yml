@@ -24,6 +24,10 @@ on:
       - 'frontend/**'
       - 'backend/**'
       - '.github/workflows/deployment-monitor.yml'
+  # Trigger on deployment events
+  deployment:
+  # Trigger on deployment status events
+  deployment_status:
 
 # Add permissions to allow workflow triggering
 permissions:
@@ -53,8 +57,26 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
+      - name: Add immediate deployment check
+        id: deployment_event_info
+        if: github.event_name == 'deployment' || github.event_name == 'deployment_status'
+        run: |
+          echo "Running immediate deployment check (triggered by ${{ github.event_name }})"
+          echo "deployment_triggered=true" >> $GITHUB_OUTPUT
+          echo "deployment_id=${{ github.event.deployment.id || '' }}" >> $GITHUB_OUTPUT
+          echo "deployment_status=${{ github.event.deployment_status.state || 'pending' }}" >> $GITHUB_OUTPUT
+          echo "deployment_target_url=${{ github.event.deployment_status.target_url || '' }}" >> $GITHUB_OUTPUT
+          
+          # Log the deployment details for debugging
+          echo "Deployment event details:"
+          echo "  Event type: ${{ github.event_name }}"
+          echo "  Deployment ID: ${{ github.event.deployment.id || 'N/A' }}"
+          echo "  Status: ${{ github.event.deployment_status.state || 'N/A' }}"
+          echo "  Target URL: ${{ github.event.deployment_status.target_url || 'N/A' }}"
+          echo "  Environment: ${{ github.event.deployment.environment || github.event.deployment_status.environment || 'N/A' }}"
+
       - name: Check Railway deployment
-        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'railway' }}
+        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'railway' || github.event_name == 'push' || github.event_name == 'deployment' || github.event_name == 'deployment_status' }}
         id: check_railway
         run: |
           echo "Checking Railway deployment status..."
@@ -76,7 +98,7 @@ jobs:
           fi
 
       - name: Check Vercel deployment
-        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'vercel' }}
+        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'vercel' || github.event_name == 'push' || github.event_name == 'deployment' || github.event_name == 'deployment_status' }}
         id: check_vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -85,13 +107,21 @@ jobs:
         run: |
           echo "Checking Vercel deployment status..."
           
-          # Get the latest deployment
-          LATEST_DEPLOYMENT=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID")
-          
-          # Extract deployment details
-          DEPLOYMENT_ID=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].uid')
-          DEPLOYMENT_STATE=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].state')
-          DEPLOYMENT_URL=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].url')
+          # Check if we have a deployment ID from the event
+          if [[ "${{ steps.deployment_event_info.outputs.deployment_triggered }}" == "true" && "${{ steps.deployment_event_info.outputs.deployment_target_url }}" != "" ]]; then
+            echo "Using deployment details from webhook event"
+            DEPLOYMENT_ID="${{ steps.deployment_event_info.outputs.deployment_id }}"
+            DEPLOYMENT_STATE="${{ steps.deployment_event_info.outputs.deployment_status }}"
+            DEPLOYMENT_URL="${{ steps.deployment_event_info.outputs.deployment_target_url }}"
+          else
+            # Get the latest deployment
+            LATEST_DEPLOYMENT=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID")
+            
+            # Extract deployment details
+            DEPLOYMENT_ID=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].uid')
+            DEPLOYMENT_STATE=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].state')
+            DEPLOYMENT_URL=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].url')
+          fi
           
           echo "Latest deployment ID: $DEPLOYMENT_ID"
           echo "Deployment state: $DEPLOYMENT_STATE"
@@ -123,6 +153,31 @@ jobs:
             echo "vercel_status=deploying" >> $GITHUB_OUTPUT
             echo "vercel_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
             echo "vercel_deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+          fi
+          
+          # For immediate deployment checks, add a 60-second retries
+          if [[ "${{ github.event_name }}" == "deployment" || "${{ github.event_name }}" == "deployment_status" ]]; then
+            if [[ "$DEPLOYMENT_STATE" != "READY" && "$DEPLOYMENT_STATE" != "ERROR" ]]; then
+              echo "Deployment still in progress. Starting quick retry mechanism..."
+              
+              # Try up to 6 times with 10-second intervals (total 60 seconds)
+              for i in {1..6}; do
+                echo "Retry $i: Waiting 10 seconds..."
+                sleep 10
+                
+                # Re-check deployment status
+                UPDATED_DEPLOYMENT=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments/$DEPLOYMENT_ID?teamId=$VERCEL_ORG_ID")
+                UPDATED_STATE=$(echo $UPDATED_DEPLOYMENT | jq -r '.state')
+                
+                echo "Updated deployment state: $UPDATED_STATE"
+                
+                if [[ "$UPDATED_STATE" == "READY" || "$UPDATED_STATE" == "ERROR" ]]; then
+                  echo "Deployment reached final state: $UPDATED_STATE"
+                  echo "vercel_status=$UPDATED_STATE" >> $GITHUB_OUTPUT
+                  break
+                fi
+              done
+            fi
           fi
 
       - name: Determine next action
@@ -219,4 +274,11 @@ jobs:
             echo "- Deployment URL: [https://${{ steps.check_vercel.outputs.vercel_url }}](https://${{ steps.check_vercel.outputs.vercel_url }})" >> $GITHUB_STEP_SUMMARY
             echo "- Deployment ID: \`${{ steps.check_vercel.outputs.vercel_deployment_id }}\`" >> $GITHUB_STEP_SUMMARY
             echo "- Triggering fix workflow: \`fix-vercel\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ github.event_name }}" == "deployment" || "${{ github.event_name }}" == "deployment_status" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Immediate Deployment Check" >> $GITHUB_STEP_SUMMARY
+            echo "- Triggered by: \`${{ github.event_name }}\` event" >> $GITHUB_STEP_SUMMARY
+            echo "- Response time: < 60 seconds" >> $GITHUB_STEP_SUMMARY
           fi 

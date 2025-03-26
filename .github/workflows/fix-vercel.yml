@@ -17,7 +17,8 @@ on:
   # Run on schedule to automatically fix issues
   schedule:
     - cron: '*/15 * * * *'  # Run every 15 minutes
-
+  # Run immediately when deployment status changes (for instant feedback)
+  deployment_status:
 
 # Add permissions needed for GitHub token
 permissions:
@@ -33,12 +34,41 @@ jobs:
   detect-failures:
     runs-on: ubuntu-latest
     outputs:
-      deployment_id: ${{ steps.detect_failures.outputs.deployment_id }}
-      deployment_url: ${{ steps.detect_failures.outputs.deployment_url }}
-      has_failures: ${{ steps.detect_failures.outputs.has_failures }}
+      deployment_id: ${{ steps.final_status.outputs.deployment_id }}
+      deployment_url: ${{ steps.final_status.outputs.deployment_url }}
+      has_failures: ${{ steps.final_status.outputs.has_failures }}
     steps:
+      - name: Check deployment status event
+        id: check_deployment_event
+        if: github.event_name == 'deployment_status'
+        run: |
+          echo "Processing deployment_status event for immediate feedback..."
+          
+          # Extract deployment information from the event payload
+          DEPLOYMENT_STATE="${{ github.event.deployment_status.state }}"
+          DEPLOYMENT_ID="${{ github.event.deployment.id }}"
+          DEPLOYMENT_URL="${{ github.event.deployment_status.target_url }}"
+          
+          echo "Deployment ID: $DEPLOYMENT_ID"
+          echo "Deployment State: $DEPLOYMENT_STATE"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          
+          # Check if the deployment failed
+          if [[ "$DEPLOYMENT_STATE" == "failure" || "$DEPLOYMENT_STATE" == "error" ]]; then
+            echo "❌ Deployment failed or has errors - will trigger fix"
+            echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+            echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+            echo "has_failures=true" >> $GITHUB_OUTPUT
+            echo "event_triggered=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Deployment is in state: $DEPLOYMENT_STATE - no fix needed"
+            echo "has_failures=false" >> $GITHUB_OUTPUT
+            echo "event_triggered=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Check for failed deployments
         id: detect_failures
+        if: github.event_name != 'deployment_status' || steps.check_deployment_event.outputs.event_triggered != 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -74,6 +104,22 @@ jobs:
               echo "No failed deployments found and no manual deployment ID specified"
               echo "has_failures=false" >> $GITHUB_OUTPUT
             fi
+          fi
+      
+      - name: Determine final status
+        id: final_status
+        run: |
+          # Handle both deployment_status event outputs and regular detection
+          if [[ "${{ github.event_name }}" == "deployment_status" && "${{ steps.check_deployment_event.outputs.event_triggered }}" == "true" ]]; then
+            echo "Using deployment status event data"
+            echo "deployment_id=${{ steps.check_deployment_event.outputs.deployment_id }}" >> $GITHUB_OUTPUT
+            echo "deployment_url=${{ steps.check_deployment_event.outputs.deployment_url }}" >> $GITHUB_OUTPUT
+            echo "has_failures=${{ steps.check_deployment_event.outputs.has_failures }}" >> $GITHUB_OUTPUT
+          else
+            echo "Using regular detection data"
+            echo "deployment_id=${{ steps.detect_failures.outputs.deployment_id }}" >> $GITHUB_OUTPUT
+            echo "deployment_url=${{ steps.detect_failures.outputs.deployment_url }}" >> $GITHUB_OUTPUT
+            echo "has_failures=${{ steps.detect_failures.outputs.has_failures }}" >> $GITHUB_OUTPUT
           fi
   
   # Only run fix job if failures were detected
