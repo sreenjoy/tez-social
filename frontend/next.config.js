@@ -40,7 +40,6 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   // Experimental features
   experimental: {
-    optimizeFonts: true,
     esmExternals: 'loose',
     optimizeCss: true
   },
