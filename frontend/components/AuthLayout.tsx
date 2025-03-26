@@ -3,7 +3,6 @@ import { Box, Button, Typography, IconButton, Menu, MenuItem, Tooltip } from '@m
 import { useRouter } from 'next/router';
 import useAuthStore from '../store/authStore';
 import { useTheme } from 'next-themes';
-import ThemeToggle from './ThemeToggle';
 
 // Define props interface
 interface AuthLayoutProps {
@@ -75,16 +74,16 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
     setMounted(true);
   }, []);
 
-  // Determine current theme for UI components
-  const currentTheme = theme === 'system' ? 'auto' : theme;
+  // Safety check - if theme is not loaded yet, don't render theme-dependent elements
+  if (!mounted) return null;
+
+  const isDarkTheme = theme === 'dark';
   
   // Get theme icon based on current theme
   const getThemeIcon = () => {
-    if (!mounted) return null;
-    
-    if (currentTheme === 'dark') {
+    if (isDarkTheme) {
       return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
-    } else if (currentTheme === 'light') {
+    } else if (theme === 'light') {
       return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
     } else {
       return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
@@ -92,7 +91,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
   };
 
   return (
-    <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Theme Toggle */}
       <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
         <Tooltip title="Change theme">
@@ -101,10 +100,10 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             size="small"
             onClick={openThemeMenu}
             sx={{
-              color: theme === 'dark' ? 'white' : '#1A2235',
-              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              color: isDarkTheme ? 'white' : '#1A2235',
+              backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
               '&:hover': {
-                backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+                backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
               }
             }}
           >
@@ -146,8 +145,8 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
           padding: 4,
           paddingTop: 6,
           position: 'relative',
-          background: theme === 'dark' ? '#1A2235' : '#1f4287',
-          backgroundImage: theme === 'dark' 
+          background: isDarkTheme ? '#1A2235' : '#1f4287',
+          backgroundImage: isDarkTheme 
             ? 'linear-gradient(135deg, #1A2235 0%, #0f172a 100%)' 
             : 'linear-gradient(135deg, #1f4287 0%, #071e56 100%)',
           overflow: 'hidden'
@@ -273,7 +272,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
           justifyContent: 'center',
           width: { xs: '100%', md: '50%' },
           padding: { xs: 2, sm: 4 },
-          background: theme === 'dark' ? '#111827' : '#f8f9fa',
+          background: isDarkTheme ? '#111827' : '#f8f9fa',
           position: 'relative',
           overflow: 'hidden',
           textAlign: 'center'
@@ -313,7 +312,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
           zIndex: 1
         }}>
           {/* Tabs for switching between sign in and sign up */}
-          <Box sx={{ mb: 4, display: 'flex', border: '1px solid', borderColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)', borderRadius: '10px', overflow: 'hidden' }}>
+          <Box sx={{ mb: 4, display: 'flex', border: '1px solid', borderColor: isDarkTheme ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)', borderRadius: '10px', overflow: 'hidden' }}>
             <Button 
               variant={tab === 'signin' ? 'contained' : 'text'}
               onClick={() => setTab('signin')}
@@ -321,9 +320,9 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
                 flexGrow: 1, 
                 py: 1,
                 bgcolor: tab === 'signin' ? 'primary.main' : 'transparent',
-                color: tab === 'signin' ? 'white' : (theme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)'),
+                color: tab === 'signin' ? 'white' : (isDarkTheme ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)'),
                 '&:hover': {
-                  bgcolor: tab === 'signin' ? 'primary.dark' : (theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
+                  bgcolor: tab === 'signin' ? 'primary.dark' : (isDarkTheme ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
                 },
                 borderRadius: '10px 0 0 10px',
                 textTransform: 'none',
@@ -338,9 +337,9 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
                 flexGrow: 1, 
                 py: 1,
                 bgcolor: tab === 'signup' ? 'primary.main' : 'transparent',
-                color: tab === 'signup' ? 'white' : (theme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)'),
+                color: tab === 'signup' ? 'white' : (isDarkTheme ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)'),
                 '&:hover': {
-                  bgcolor: tab === 'signup' ? 'primary.dark' : (theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
+                  bgcolor: tab === 'signup' ? 'primary.dark' : (isDarkTheme ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
                 },
                 borderRadius: '0 10px 10px 0',
                 textTransform: 'none',
