@@ -19,10 +19,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       secretOrKey: configService.get('JWT_SECRET'),
     });
+    
+    // Log the configuration for debugging
+    this.logger.log(`JWT Strategy initialized with secret: ${configService.get('JWT_SECRET') ? '[SECRET CONFIGURED]' : '[SECRET MISSING]'}`);
+    this.logger.log(`JWT Expiration: ${configService.get('JWT_EXPIRATION') || '1d'}`);
   }
 
   async validate(payload: any) {
     try {
+      this.logger.debug(`Validating JWT payload: ${JSON.stringify({ sub: payload.sub, email: payload.email })}`);
+      
       const { sub, email } = payload;
       
       // Verify payload has required fields
@@ -39,20 +45,25 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('User not found');
       }
 
-      // Check if the email matches what's in the token
-      if (user.email !== email) {
-        this.logger.warn(`Email mismatch during JWT validation for user ${sub}`);
-        throw new UnauthorizedException('Token validation failed');
+      // Check if the email matches what's in the token, but case insensitive
+      if (user.email.toLowerCase() !== email.toLowerCase()) {
+        this.logger.warn(`Email mismatch during JWT validation for user ${sub}. Token: ${email}, DB: ${user.email}`);
+        throw new UnauthorizedException('Token email mismatch');
       }
 
-      // Return the user payload for the request
-      return { sub, email, role: user.role };
+      // Return a user object with the necessary fields
+      return { 
+        userId: sub, 
+        email: user.email, 
+        username: user.username,
+        role: user.role 
+      };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
       this.logger.error(`JWT validation error: ${error.message}`, error.stack);
-      throw new UnauthorizedException('Authentication failed');
+      throw new UnauthorizedException('Invalid user session');
     }
   }
 } 

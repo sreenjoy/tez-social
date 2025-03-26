@@ -29,6 +29,19 @@ export class AuthController {
     private configService: ConfigService,
   ) {}
 
+  // Test endpoint for debugging token validation
+  @Get('test-auth')
+  @UseGuards(AuthGuard('jwt'))
+  testAuth(@Req() req) {
+    this.logger.log(`Test auth endpoint called with user: ${JSON.stringify(req.user)}`);
+    return {
+      success: true,
+      message: 'Authentication is working correctly',
+      user: req.user,
+      timestamp: new Date().toISOString()
+    };
+  }
+
   @Post('register')
   @UsePipes(new ValidationPipe({ 
     transform: true, 
