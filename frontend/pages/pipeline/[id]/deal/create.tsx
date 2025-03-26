@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Box, Typography, Paper, CircularProgress, Alert } from '@mui/material';
@@ -6,7 +6,6 @@ import DashboardLayout from '../../../../components/DashboardLayout';
 import CreateDealForm from '../../../../components/CreateDealForm';
 import { pipelineApi } from '../../../../services/api';
 import ProtectedRoute from '../../../../components/ProtectedRoute';
-import { useState, useEffect } from 'react';
 
 const CreateDealPage = () => {
   const router = useRouter();
