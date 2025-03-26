@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, useMediaQuery } from '@mui/material';
+import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import useThemeStore from '../store/themeStore';
+import { Box, Typography, Container, Paper, Tabs, Tab, Button } from '@mui/material';
 import ThemeToggle from './ThemeToggle';
+import useAuthStore from '../store/authStore';
+import Image from 'next/image';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -12,14 +15,14 @@ interface AuthLayoutProps {
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin' }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(initialTab);
-  const { resolvedTheme, updateResolvedTheme } = useThemeStore();
-  const isDark = resolvedTheme === 'dark';
-  const isMobile = useMediaQuery('(max-width:900px)');
+  const { isAuthenticated } = useAuthStore();
 
-  // Update resolved theme on mount
+  // Redirect authenticated users to dashboard
   useEffect(() => {
-    updateResolvedTheme();
-  }, [updateResolvedTheme]);
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   // Handle tab change
   const handleTabChange = (tab: 'signin' | 'signup') => {
@@ -28,197 +31,98 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-        backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-        backgroundImage: isDark 
-          ? 'radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)'
-          : 'radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(99, 102, 241, 0.08) 0%, transparent 50%)',
-        padding: { xs: 3, sm: 4 },
-        pt: { xs: 8, sm: 10 },
-        pb: { xs: 8, sm: 10 }
-      }}
-    >
-      <Box 
-        sx={{ 
-          position: 'absolute', 
-          top: 16, 
-          right: 16,
-          zIndex: 10
-        }}
-      >
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      <Head>
+        <title>{activeTab === 'signin' ? 'Sign In' : 'Sign Up'} | Tez Social</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </Head>
+      
+      <Box sx={{ 
+        position: 'absolute', 
+        top: 10, 
+        right: 10,
+        zIndex: 10
+      }}>
         <ThemeToggle />
       </Box>
-      
-      <Box
-        sx={{
-          width: '100%',
-          maxWidth: 400,
-          mb: 4
-        }}
-      >
-        <Typography 
-          variant="h3" 
-          component="h1" 
-          sx={{ 
-            mb: 2, 
-            fontWeight: 700,
-            color: isDark ? 'white' : '#1a2b42',
-            fontSize: { xs: '1.875rem', sm: '2rem' },
-            textAlign: 'center',
-            letterSpacing: '-0.02em'
-          }}
-        >
-          Welcome to tez.social
-        </Typography>
-        
-        <Typography 
-          variant="body1" 
-          sx={{ 
-            mb: 5,
-            color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-            fontWeight: 400,
-            fontSize: '1rem',
-            textAlign: 'center'
-          }}
-        >
-          Your all-in-one solution for managing customer relationships
-        </Typography>
 
-        {/* Auth tabs */}
-        <Box 
-          sx={{ 
+      <Container component="main" maxWidth="xs" className="flex flex-col flex-grow justify-center py-12">
+        <Box
+          sx={{
             display: 'flex',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            width: '100%',
-            mx: 'auto',
-            mb: 4,
-            boxShadow: isDark ? '0 4px 12px rgba(0, 0, 0, 0.1)' : '0 4px 12px rgba(0, 0, 0, 0.05)',
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
-          <Button
-            fullWidth
-            variant={activeTab === 'signin' ? 'contained' : 'text'}
-            color="primary"
-            onClick={() => handleTabChange('signin')}
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ 
+              width: 48, 
+              height: 48, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <Typography variant="h5" color="white">T</Typography>
+            </Box>
+            <Typography component="h1" variant="h5" color="primary.main" fontWeight="bold">
+              tez.social
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 2 }}>
+            Web3's Telegram CRM Solution
+          </Typography>
+
+          <Paper 
+            elevation={2}
             sx={{ 
-              py: 1.5,
-              borderRadius: 0,
-              fontWeight: 500,
-              color: activeTab === 'signin' 
-                ? '#fff' 
-                : isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-              bgcolor: activeTab === 'signin' ? '#3b82f6' : 'transparent',
-              '&:hover': {
-                bgcolor: activeTab === 'signin' 
-                  ? '#2563eb' 
-                  : isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'
-              },
-              borderBottom: activeTab === 'signin' 
-                ? '3px solid #3b82f6' 
-                : isDark 
-                  ? '3px solid transparent' 
-                  : '3px solid transparent',
-              transition: 'all 0.2s ease'
+              width: '100%', 
+              overflow: 'hidden',
+              borderRadius: 2,
+              bgcolor: 'background.paper',
+              transition: 'all 0.3s ease'
             }}
           >
-            Sign In
-          </Button>
-          <Button
-            fullWidth
-            variant={activeTab === 'signup' ? 'contained' : 'text'}
-            color="primary"
-            onClick={() => handleTabChange('signup')}
-            sx={{ 
-              py: 1.5,
-              borderRadius: 0,
-              fontWeight: 500,
-              color: activeTab === 'signup' 
-                ? '#fff' 
-                : isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-              bgcolor: activeTab === 'signup' ? '#3b82f6' : 'transparent',
-              '&:hover': {
-                bgcolor: activeTab === 'signup' 
-                  ? '#2563eb' 
-                  : isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'
-              },
-              borderBottom: activeTab === 'signup' 
-                ? '3px solid #3b82f6' 
-                : isDark 
-                  ? '3px solid transparent' 
-                  : '3px solid transparent',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Sign Up
-          </Button>
+            <Tabs
+              value={activeTab}
+              onChange={(_, value) => handleTabChange(value)}
+              variant="fullWidth"
+              aria-label="auth tabs"
+              sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+              <Tab 
+                label="Sign In" 
+                value="signin" 
+                id="auth-tab-signin"
+                aria-controls="auth-tabpanel-signin"
+              />
+              <Tab 
+                label="Sign Up" 
+                value="signup"
+                id="auth-tab-signup"
+                aria-controls="auth-tabpanel-signup" 
+              />
+            </Tabs>
+            
+            <Box sx={{ p: 3 }}>
+              {children}
+            </Box>
+          </Paper>
+          
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 5 }}>
+            <Link href="/privacy-policy" className="text-blue-600 dark:text-blue-400 hover:underline">
+              Privacy Policy
+            </Link>
+            {' • '}
+            <Link href="/terms-of-service" className="text-blue-600 dark:text-blue-400 hover:underline">
+              Terms of Service
+            </Link>
+          </Typography>
         </Box>
-
-        {/* Form description */}
-        <Typography
-          variant="body2"
-          sx={{
-            mb: 4,
-            color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
-            fontWeight: 400,
-            fontSize: '0.875rem',
-            textAlign: 'center'
-          }}
-        >
-          {activeTab === 'signin' 
-            ? 'Enter your email and password to sign in' 
-            : 'Create your account to get started'}
-        </Typography>
-      </Box>
-
-      {/* Auth form content */}
-      <Box sx={{ width: '100%', maxWidth: 400, mb: 6 }}>
-        {children}
-      </Box>
-
-      {/* Skip Login Button - Only shown on signup page */}
-      {activeTab === 'signup' && (
-        <Button
-          variant="text"
-          color="primary"
-          onClick={() => router.push('/dashboard')}
-          sx={{
-            mb: 4,
-            color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-            '&:hover': {
-              bgcolor: 'transparent',
-              color: isDark ? 'white' : '#1a2b42',
-            },
-            fontWeight: 500,
-            fontSize: '0.9rem',
-          }}
-        >
-          Skip Login
-        </Button>
-      )}
-
-      {/* Copyright */}
-      <Box 
-        sx={{ 
-          position: 'absolute',
-          bottom: 16,
-          textAlign: 'center',
-          color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
-          fontSize: '0.75rem'
-        }}
-      >
-        © {new Date().getFullYear()} Tez Social. All rights reserved.
-      </Box>
-    </Box>
+      </Container>
+    </div>
   );
 };
 
-export default AuthLayout;
+export default AuthLayout; 
