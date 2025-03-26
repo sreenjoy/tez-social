@@ -1,9 +1,9 @@
 name: Deployment Monitor
 
 on:
-  # Run every 30 minutes
+  # Run scheduled checks
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 * * * *'  # Every 30 minutes
   # Allow manual triggering
   workflow_dispatch:
     inputs:
@@ -16,11 +16,23 @@ on:
           - all
           - vercel
           - railway
+  # Run when new code is pushed to main
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/deployment-monitor.yml'
 
 # Add permissions to allow workflow triggering
 permissions:
   actions: write
   contents: read
+  deployments: write
+  id-token: write
+  issues: write
+  pull-requests: write
 
 jobs:
   monitor-deployments:
