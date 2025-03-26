@@ -1,6 +1,7 @@
 name: Fix Vercel Deployment
 
 on:
+  # Allow manual triggering
   workflow_dispatch:
     inputs:
       deployment_id:
@@ -13,6 +14,9 @@ on:
         required: true
         type: string
         default: 'auto-detect'
+  # Run on schedule to automatically fix issues
+  schedule:
+    - cron: '*/15 * * * *'  # Run every 15 minutes
 
 
 # Add permissions needed for GitHub token
@@ -25,7 +29,57 @@ permissions:
   pull-requests: write
 
 jobs:
+  # First job to detect failed deployments
+  detect-failures:
+    runs-on: ubuntu-latest
+    outputs:
+      deployment_id: ${{ steps.detect_failures.outputs.deployment_id }}
+      deployment_url: ${{ steps.detect_failures.outputs.deployment_url }}
+      has_failures: ${{ steps.detect_failures.outputs.has_failures }}
+    steps:
+      - name: Check for failed deployments
+        id: detect_failures
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "Checking for failed Vercel deployments..."
+          
+          # Get recent deployments
+          ALL_DEPLOYMENTS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=10&teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID")
+          
+          # Count error deployments
+          ERROR_COUNT=$(echo $ALL_DEPLOYMENTS | jq -r '.deployments | map(select(.state == "ERROR")) | length')
+          echo "Found $ERROR_COUNT deployments with ERROR state"
+          
+          if [[ $ERROR_COUNT -gt 0 ]]; then
+            # Get the first error deployment
+            ERROR_DEPLOYMENT=$(echo $ALL_DEPLOYMENTS | jq -r '.deployments | map(select(.state == "ERROR")) | first')
+            DEPLOYMENT_ID=$(echo $ERROR_DEPLOYMENT | jq -r '.uid')
+            DEPLOYMENT_URL=$(echo $ERROR_DEPLOYMENT | jq -r '.url')
+            
+            echo "Will fix deployment ID: $DEPLOYMENT_ID"
+            echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+            echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+            echo "has_failures=true" >> $GITHUB_OUTPUT
+          else
+            # Check if there was a manually specified deployment ID
+            if [[ "${{ github.event.inputs.deployment_id }}" != "" && "${{ github.event.inputs.deployment_id }}" != "auto-detect" ]]; then
+              echo "Using manually specified deployment ID: ${{ github.event.inputs.deployment_id }}"
+              echo "deployment_id=${{ github.event.inputs.deployment_id }}" >> $GITHUB_OUTPUT
+              echo "deployment_url=${{ github.event.inputs.deployment_url }}" >> $GITHUB_OUTPUT
+              echo "has_failures=true" >> $GITHUB_OUTPUT
+            else
+              echo "No failed deployments found and no manual deployment ID specified"
+              echo "has_failures=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+  
+  # Only run fix job if failures were detected
   diagnose-and-fix:
+    needs: detect-failures
+    if: needs.detect-failures.outputs.has_failures == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -36,39 +90,13 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Auto-detect latest deployment
-        id: detect_deployment
-        if: ${{ github.event.inputs.deployment_id == 'auto-detect' || github.event.inputs.deployment_url == 'auto-detect' }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          echo "Auto-detecting latest deployment..."
-          
-          # Get the latest deployment
-          LATEST_DEPLOYMENT=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID")
-          
-          # Extract deployment details
-          DEPLOYMENT_ID=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].uid')
-          DEPLOYMENT_URL=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].url')
-          
-          echo "Latest deployment ID: $DEPLOYMENT_ID"
-          echo "Deployment URL: $DEPLOYMENT_URL"
-          
-          # Set outputs for use in subsequent steps
-          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
-          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
-
       - name: Get deployment logs
         id: get_logs
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_ID: ${{ needs.detect-failures.outputs.deployment_id }}
+          DEPLOYMENT_URL: ${{ needs.detect-failures.outputs.deployment_url }}
         run: |
-          # Use auto-detected deployment ID if applicable, otherwise use the input value
-          DEPLOYMENT_ID="${{ steps.detect_deployment.outputs.deployment_id || github.event.inputs.deployment_id }}"
-          DEPLOYMENT_URL="${{ steps.detect_deployment.outputs.deployment_url || github.event.inputs.deployment_url }}"
-          
           echo "Getting logs for deployment $DEPLOYMENT_ID..."
           
           # Get deployment information
