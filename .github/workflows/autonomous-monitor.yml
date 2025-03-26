@@ -70,6 +70,7 @@ jobs:
               const auth = createAppAuth({
                 appId: process.env.APP_ID,
                 privateKey: process.env.PRIVATE_KEY,
+                installationId: 63351866 // Explicit installation ID for Tez-Social repository
               });
               
               const installationAuth = await auth({ type: 'installation' });
