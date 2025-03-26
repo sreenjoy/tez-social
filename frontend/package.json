@@ -16,6 +16,7 @@
     "axios": "^1.6.2",
     "next": "14.1.0",
     "react": "^18",
+    "react-color": "^2.19.3",
     "react-dom": "^18",
     "react-hook-form": "^7.48.2",
     "zustand": "^4.4.6"
@@ -24,6 +25,7 @@
     "@playwright/test": "^1.51.1",
     "@types/node": "^20",
     "@types/react": "^18",
+    "@types/react-color": "^3.0.6",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
