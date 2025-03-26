@@ -20,7 +20,6 @@ import {
   Logout as LogoutIcon
 } from '@mui/icons-material';
 import DashboardSidebar from './DashboardSidebar';
-import ThemeToggle from './ThemeToggle';
 
 // Icons
 const HomeIcon = () => (
@@ -113,8 +112,6 @@ export default function DashboardLayout({ children, title = 'Dashboard' }: Dashb
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {title}
           </Typography>
-          
-          <ThemeToggle />
           
           <IconButton color="inherit" onClick={handleLogout} sx={{ ml: 1 }}>
             <LogoutIcon />
