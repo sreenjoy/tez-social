@@ -1,6 +1,6 @@
 # Updating Your GitHub App Permissions
 
-This guide will walk you through updating your existing GitHub App with additional permissions and event subscriptions to enhance your automation capabilities.
+This guide will walk you through updating your existing GitHub App with additional permissions to enhance your automation capabilities.
 
 ## Step 1: Access Your GitHub Apps
 
@@ -9,41 +9,37 @@ This guide will walk you through updating your existing GitHub App with addition
 3. In the Developer settings sidebar, click on "GitHub Apps"
 4. Find your existing app for Tez-Social deployment monitoring and click on its name
 
-## Step 2: Update Repository Permissions
+## Step 2: Navigate to Permissions & Events
 
-Scroll down to the "Repository permissions" section and update/add the following permissions:
+1. In the left sidebar of your GitHub App settings, click on "Permissions & events"
+2. You'll see the permissions interface with various categories like "Repository permissions"
+
+## Step 3: Update Repository Permissions
+
+In the "Repository permissions" section, set the following permissions to "Read and write":
 
 | Permission | Access Level |
 |------------|--------------|
-| Actions | Read & write |
-| Checks | Read & write |
-| Contents | Read & write |
-| Deployments | Read & write |
-| Issues | Read & write |
-| Pull requests | Read & write |
-| Workflows | Read & write |
-| Commit statuses | Read & write (may appear as "Commit Status" in the UI) |
+| Actions | Read and write |
+| Checks | Read and write |
+| Contents | Read and write |
+| Deployments | Read and write |
+| Issues | Read and write |
+| Pull requests | Read and write |
+| Workflows | Read and write |
 
-> Note: If you don't see "Statuses" or "Commit statuses", don't worry. Just set all the other permissions listed above.
-
-## Step 3: Subscribe to Events
-
-In the "Subscribe to events" section, check the following events:
-
-- Check run
-- Check suite
-- Deployment
-- Deployment status
-- Push
-- Status (if available)
-- Workflow job
-- Workflow run
+To change the permission level:
+1. Click on the permission category
+2. In the dropdown on the right side that appears, select "Read and write"
+3. Some permissions may have associated events that will be automatically selected when you grant the permission
 
 ## Step 4: Save Changes
 
-Scroll to the bottom of the page and click the "Save changes" button.
+After setting all permissions:
+1. Scroll to the bottom of the page
+2. Click the "Save changes" button
 
-## Step 5: Verify Installation
+## Step 5: Update Installation
 
 1. After saving changes, GitHub may prompt you to update the installation permissions
 2. Follow any prompts to update the installation
@@ -56,12 +52,12 @@ Scroll to the bottom of the page and click the "Save changes" button.
 - **Checks**: Allows the app to create, manage, and view CI/CD check runs
 - **Deployments**: Enables deployment creation and monitoring
 - **Issues**: Allows automated issue creation and management
-- **Commit statuses**: Enables setting commit status checks (if available)
 
-### New Events Added:
-- **Check run & Check suite**: For monitoring CI/CD processes
-- **Deployment & Deployment status**: For tracking deployment progress
-- **Status**: For responding to repository status changes (if available)
-- **Workflow job & Workflow run**: For monitoring GitHub Actions workflows
+### Events Automatically Included:
+In the new GitHub interface, events are automatically tied to their corresponding permissions. By granting the permissions above, your app will be able to respond to:
+- Check run and Check suite events
+- Deployment and Deployment status events
+- Push events
+- Workflow job and Workflow run events
 
 These expanded permissions will enable your app to provide more comprehensive monitoring and automation capabilities. 

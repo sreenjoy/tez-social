@@ -8,21 +8,31 @@
  * 4. Listing repository information
  * 
  * Run this script with:
+ * node test_app_auth.js
+ * 
+ * Or with explicit credentials:
  * APP_ID=your-app-id APP_PRIVATE_KEY=your-app-private-key node test_app_auth.js
  */
 
 const { createAppAuth } = require('@octokit/auth-app');
 const { Octokit } = require('@octokit/rest');
+const { getAppCredentials } = require('./get_app_credentials');
 
 async function testAppAuth() {
   try {
-    // Get environment variables
-    const appId = process.env.APP_ID;
-    const privateKey = process.env.APP_PRIVATE_KEY;
+    // Get credentials
+    const credentials = getAppCredentials();
+    const appId = credentials.appId;
+    const privateKey = credentials.privateKey;
     
     if (!appId || !privateKey) {
-      console.error('⚠️ Error: APP_ID and APP_PRIVATE_KEY environment variables are required');
-      console.log('Usage: APP_ID=your-app-id APP_PRIVATE_KEY=your-app-private-key node test_app_auth.js');
+      console.error('⚠️ Error: GitHub App credentials not found');
+      console.log('\nTo provide credentials:');
+      console.log('1. Set APP_ID and APP_PRIVATE_KEY environment variables');
+      console.log('2. Create credential files in one of these locations:');
+      console.log('   - ~/.github/tez-social-app-id and ~/.github/tez-social-private-key.pem');
+      console.log('   - .github/app_id and .github/private-key.pem in the repository root');
+      console.log('   - app_id and private-key.pem in the scripts directory');
       process.exit(1);
     }
     
@@ -53,7 +63,14 @@ async function testAppAuth() {
       console.log('✅ Successfully retrieved app information');
       console.log(`App name: ${app.name}`);
       console.log(`App ID: ${app.id}`);
-      console.log(`App permissions: ${Object.keys(app.permissions).join(', ')}\n`);
+      console.log(`App permissions: ${Object.keys(app.permissions).join(', ')}`);
+      
+      // Log permission levels
+      console.log('\nPermission levels:');
+      Object.entries(app.permissions).forEach(([permission, level]) => {
+        console.log(`- ${permission}: ${level}`);
+      });
+      console.log('');
     } catch (error) {
       console.error('❌ Failed to get app information:', error.message);
       process.exit(1);
@@ -84,8 +101,30 @@ async function testAppAuth() {
       console.log(`Description: ${repo.description || 'No description'}`);
       console.log(`Default branch: ${repo.default_branch}\n`);
       
+      // Step 5: Test workflow permissions
+      console.log('Step 5: Testing workflow permissions...');
+      try {
+        const { data: workflows } = await installationOctokit.actions.listRepoWorkflows({
+          owner: 'sreenjoy',
+          repo: 'tez-social'
+        });
+        
+        console.log('✅ Successfully retrieved workflows');
+        console.log(`Total workflows: ${workflows.total_count}`);
+        if (workflows.workflows.length > 0) {
+          console.log('Recent workflows:');
+          workflows.workflows.slice(0, 3).forEach(workflow => {
+            console.log(`- ${workflow.name} (${workflow.path})`);
+          });
+        }
+        console.log('');
+      } catch (error) {
+        console.log('❌ Failed to list workflows:', error.message);
+        console.log('This may indicate missing "actions" or "workflow" permissions.\n');
+      }
+      
       console.log('🎉 All tests passed! Your GitHub App authentication is working correctly.');
-      console.log('You can now update your app permissions following the guide at .github/GITHUB_APP_UPDATE_GUIDE.md');
+      console.log('The updated permissions are active and working.');
     } catch (error) {
       console.error('❌ Failed to authenticate as installation:', error.message);
       console.log('\nThis may be because:');
