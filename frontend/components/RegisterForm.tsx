@@ -6,8 +6,7 @@ import {
   InputAdornment, 
   IconButton,
   FormHelperText,
-  CircularProgress,
-  Grid
+  CircularProgress
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
@@ -117,7 +116,8 @@ const RegisterForm = () => {
     '& .MuiOutlinedInput-root': {
       bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
       borderRadius: '10px',
-    }
+    },
+    mb: 3
   };
 
   const labelProps = {
@@ -143,104 +143,94 @@ const RegisterForm = () => {
         </FormHelperText>
       )}
       
-      <Grid container spacing={2.5}>
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            id="username"
-            name="username"
-            label="Username"
-            variant="outlined"
-            value={formData.username}
-            onChange={handleChange}
-            error={!!formErrors.username}
-            helperText={formErrors.username}
-            placeholder="Username"
-            sx={inputStyles}
-            InputLabelProps={labelProps}
-          />
-        </Grid>
-        
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            id="email"
-            name="email"
-            label="Email"
-            type="email"
-            variant="outlined"
-            value={formData.email}
-            onChange={handleChange}
-            error={!!formErrors.email}
-            helperText={formErrors.email}
-            placeholder="your.email@example.com"
-            sx={inputStyles}
-            InputLabelProps={labelProps}
-          />
-        </Grid>
-        
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            id="password"
-            name="password"
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            variant="outlined"
-            value={formData.password}
-            onChange={handleChange}
-            error={!!formErrors.password}
-            helperText={formErrors.password || "Must be at least 6 characters"}
-            sx={inputStyles}
-            InputLabelProps={labelProps}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-        
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            id="confirmPassword"
-            name="confirmPassword"
-            label="Confirm Password"
-            type={showConfirmPassword ? 'text' : 'password'}
-            variant="outlined"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            error={!!formErrors.confirmPassword}
-            helperText={formErrors.confirmPassword}
-            sx={inputStyles}
-            InputLabelProps={labelProps}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle confirm password visibility"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    edge="end"
-                    sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
-                  >
-                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-      </Grid>
+      <TextField
+        fullWidth
+        id="username"
+        name="username"
+        label="Username"
+        variant="outlined"
+        value={formData.username}
+        onChange={handleChange}
+        error={!!formErrors.username}
+        helperText={formErrors.username}
+        placeholder="Username"
+        sx={inputStyles}
+        InputLabelProps={labelProps}
+      />
+      
+      <TextField
+        fullWidth
+        id="email"
+        name="email"
+        label="Email"
+        type="email"
+        variant="outlined"
+        value={formData.email}
+        onChange={handleChange}
+        error={!!formErrors.email}
+        helperText={formErrors.email}
+        placeholder="your.email@example.com"
+        sx={inputStyles}
+        InputLabelProps={labelProps}
+      />
+      
+      <TextField
+        fullWidth
+        id="password"
+        name="password"
+        label="Password"
+        type={showPassword ? 'text' : 'password'}
+        variant="outlined"
+        value={formData.password}
+        onChange={handleChange}
+        error={!!formErrors.password}
+        helperText={formErrors.password || "Must be at least 6 characters"}
+        sx={inputStyles}
+        InputLabelProps={labelProps}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                aria-label="toggle password visibility"
+                onClick={() => setShowPassword(!showPassword)}
+                edge="end"
+                sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
+              >
+                {showPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+      
+      <TextField
+        fullWidth
+        id="confirmPassword"
+        name="confirmPassword"
+        label="Confirm Password"
+        type={showConfirmPassword ? 'text' : 'password'}
+        variant="outlined"
+        value={formData.confirmPassword}
+        onChange={handleChange}
+        error={!!formErrors.confirmPassword}
+        helperText={formErrors.confirmPassword}
+        sx={inputStyles}
+        InputLabelProps={labelProps}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                aria-label="toggle confirm password visibility"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                edge="end"
+                sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
+              >
+                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
       
       <Button
         type="submit"
@@ -249,7 +239,6 @@ const RegisterForm = () => {
         color="primary"
         disabled={loading}
         sx={{
-          mt: 4,
           py: 1.5,
           borderRadius: '10px',
           boxShadow: '0 4px 10px rgba(59, 130, 246, 0.25)',
