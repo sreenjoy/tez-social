@@ -1,93 +1,82 @@
-# Tez-Social Deployment Automation Tools
+# Tez-Social Scripts
 
-This directory contains scripts for monitoring, testing, and automating the Tez-Social deployment pipeline.
+This directory contains various scripts and tools for monitoring, testing, and automating the Tez-Social deployment pipeline.
 
 ## Setup
 
-Before using these scripts, install the dependencies:
-
-```bash
-npm install
-```
-
-This will install the required packages defined in `package.json`.
+1. Make sure you have Node.js installed
+2. Run `npm install` in this directory to install dependencies
+3. Some scripts may require setting environment variables (see below)
 
 ## Available Scripts
 
-### 1. Test App Authentication
+1. **Test App Authentication**: Verifies that GitHub App authentication and permissions are working correctly.
+   ```bash
+   node test_app_auth.js
+   ```
 
-```bash
-node test_app_auth.js
-```
+2. **Test Workflow Dispatch**: Tests if the GitHub App can successfully dispatch workflows.
+   ```bash
+   node test_dispatch_workflow.js
+   ```
 
-Tests GitHub App authentication using your credentials in app_id and private-key.pem files. Verifies that your GitHub App has the correct permissions and can:
-- Authenticate as the GitHub App
-- Get installation tokens
-- Access repository information
-- List workflows
-- Access content
+3. **Trigger Test Credentials**: Verifies that all credentials (Vercel, Railway, GitHub App) are functioning correctly.
+   ```bash
+   node trigger_test_credentials.js
+   ```
 
-### 2. Test Workflow Dispatch
+4. **Monitor Workflows**: Provides real-time monitoring of GitHub workflow runs.
+   ```bash
+   node monitor_workflows.js
+   ```
 
-```bash
-node test_dispatch_workflow.js
-```
+5. **Auto-Fix Issues**: Diagnoses and automatically attempts to fix common workflow issues.
+   ```bash
+   node auto_fix_issues.js
+   ```
 
-Tests if your GitHub App can dispatch a workflow. This confirms that your GitHub App has the necessary permissions to trigger GitHub Actions workflows.
+6. **Fix All Deployments**: Comprehensive script that checks and fixes both Vercel and Railway deployments.
+   ```bash
+   node fix_all_deployments.js
+   ```
 
-### 3. Trigger Test Credentials
+7. **Direct Vercel Fix**: Directly checks Vercel deployments using your credentials.
+   ```bash
+   VERCEL_TOKEN=your_token VERCEL_ORG_ID=your_org_id VERCEL_PROJECT_ID=your_project_id node run_direct_fix.js
+   ```
 
-```bash
-node trigger_test_credentials.js
-```
+## Manual Workflow Triggers (Easiest Method)
 
-Triggers both the test-credentials and deployment-monitor workflows to verify that all credentials are working correctly. This checks:
-- Vercel credentials (VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID)
-- Railway integration
-- GitHub App credentials (APP_ID, APP_PRIVATE_KEY)
+If you're having issues running the scripts locally, you can trigger the fix workflows directly from your browser:
 
-### 4. Monitor Workflows
+1. **Fix Vercel Deployments**:
+   - Go to: https://github.com/sreenjoy/tez-social/actions/workflows/fix-vercel.yml
+   - Click "Run workflow"
+   - Enter "auto-detect" for both deployment_id and deployment_url fields
+   - Click "Run workflow" button
 
-```bash
-node monitor_workflows.js
-```
+2. **Fix Railway Deployments**:
+   - Go to: https://github.com/sreenjoy/tez-social/actions/workflows/fix-railway.yml
+   - Click "Run workflow"
+   - For backend_url, keep the default (https://tez-social-production.up.railway.app)
+   - Click "Run workflow" button
 
-Provides real-time monitoring of GitHub workflow runs. Shows:
-- New workflow runs
-- Updated workflow status
-- Completed workflow results
-- Detailed information about failures
-
-Use this for continuous monitoring during deployment and debugging.
-
-### 5. Auto-Fix Issues
-
-```bash
-node auto_fix_issues.js
-```
-
-Automatically diagnoses and fixes common issues with workflows and deployments:
-- Checks for failed workflow runs
-- Fixes missing permissions in workflow files
-- Creates issues for critical failures that need attention
-- Verifies GitHub App permissions
-
-Run this if you're experiencing workflow failures or deployment issues.
+3. **Run Deployment Monitor**:
+   - Go to: https://github.com/sreenjoy/tez-social/actions/workflows/deployment-monitor.yml
+   - Click "Run workflow"
+   - Select "all" for check_type
+   - Click "Run workflow" button
 
 ## Credential Files
 
-These scripts use credential files for GitHub App authentication:
+For security reasons, these are not checked into Git:
 
-- `app_id`: Contains your GitHub App ID
-- `private-key.pem`: Contains your GitHub App private key
-
-These files are excluded from git via .gitignore for security.
+- `app_id`: Contains the GitHub App ID
+- `private-key.pem`: Contains the GitHub App private key
 
 ## Troubleshooting
 
-If scripts fail with authentication errors:
-1. Verify that app_id and private-key.pem files exist and contain valid credentials
-2. Check that your GitHub App has the correct permissions
-3. Ensure the app is installed on your repository
-
-For detailed logs and diagnostics, run the monitor_workflows.js script while triggering other operations. 
+If you encounter authentication errors:
+1. Check that `app_id` and `private-key.pem` exist in this directory
+2. Verify that the GitHub App has the required permissions
+3. Check if the GitHub App is installed on the repository 
