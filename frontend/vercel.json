@@ -17,24 +17,10 @@
   "github": {
     "silent": true
   },
-  "functions": {
-    "api/*.js": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
-  },
   "routes": [
     {
-      "src": "^/api/(.*)$",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "^/static/(.*)$",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "^/[^.]+$",
-      "dest": "/index.html"
+      "src": "^/api/(.*)",
+      "dest": "https://tez-social-production.up.railway.app/api/$1"
     },
     {
       "handle": "filesystem"

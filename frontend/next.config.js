@@ -23,8 +23,8 @@ const nextConfig = {
       transform: '@mui/icons-material/{{member}}',
     },
   },
-  // Optimize output
-  output: 'export',
+  // Configure output for Vercel deployment
+  // output: 'export',
   // Configure images
   images: {
     domains: ['example.com'],
@@ -87,8 +87,8 @@ const nextConfig = {
       },
     ];
   },
-  distDir: 'out',
-  trailingSlash: true,
+  // distDir: 'out',
+  // trailingSlash: true,
 }
 
 module.exports = nextConfig 
