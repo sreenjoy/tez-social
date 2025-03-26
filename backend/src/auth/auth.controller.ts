@@ -29,6 +29,41 @@ export class AuthController {
     private configService: ConfigService,
   ) {}
 
+  @Post('dev/reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() body: { email: string; newPassword: string }) {
+    try {
+      if (!body.email || !body.newPassword) {
+        throw new BadRequestException('Email and new password are required');
+      }
+      
+      const result = await this.authService.resetUserPassword(body.email, body.newPassword);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Success',
+        data: result,
+        timestamp: new Date().toISOString(),
+        path: '/api/auth/dev/reset-password',
+      };
+    } catch (error) {
+      this.logger.error(`Reset password error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  // Test endpoint for debugging token validation
+  @Get('test-auth')
+  @UseGuards(JwtAuthGuard)
+  testAuth(@Req() req) {
+    this.logger.log(`Test auth endpoint called with user: ${JSON.stringify(req.user)}`);
+    return {
+      success: true,
+      message: 'Authentication is working correctly',
+      user: req.user,
+      timestamp: new Date().toISOString()
+    };
+  }
+
   @Post('register')
   @UsePipes(new ValidationPipe({ 
     transform: true, 
@@ -95,7 +130,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Req() req: any) {
     try {
-      const userId = req.user.sub;
+      this.logger.debug(`Refresh token user object: ${JSON.stringify(req.user)}`);
+      const userId = req.user.userId;
       const result = await this.authService.refreshToken(userId);
       return {
         statusCode: HttpStatus.OK,
@@ -128,18 +164,9 @@ export class AuthController {
   @Get('me')
   async getProfile(@Req() req) {
     try {
-      this.logger.log(`Get profile called for user: ${JSON.stringify(req.user)}`);
-      
-      // Check if we have the userId from the JWT strategy
-      if (!req.user || !req.user.userId) {
-        this.logger.warn(`Invalid user object in request: ${JSON.stringify(req.user)}`);
-        throw new UnauthorizedException('Invalid user session');
-      }
+      this.logger.log(`Get profile called for user id: ${req.user.userId}`);
       
       const { userId, email } = req.user;
-      
-      // Log what we're trying to validate
-      this.logger.log(`Validating user with userId: ${userId} and email: ${email}`);
       
       const user = await this.authService.validateUser(userId, email);
       
@@ -187,7 +214,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getOnboardingStatus(@Req() req: any) {
     try {
-      const result = await this.authService.getUserOnboardingStatus(req.user.sub);
+      this.logger.debug(`Onboarding status user object: ${JSON.stringify(req.user)}`);
+      const result = await this.authService.getUserOnboardingStatus(req.user.userId);
       return {
         statusCode: HttpStatus.OK,
         message: 'Success',
@@ -217,40 +245,5 @@ export class AuthController {
       this.logger.error(`Verify all users error: ${error.message}`, error.stack);
       throw error;
     }
-  }
-
-  @Post('dev/reset-password')
-  @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() body: { email: string; newPassword: string }) {
-    try {
-      if (!body.email || !body.newPassword) {
-        throw new BadRequestException('Email and new password are required');
-      }
-      
-      const result = await this.authService.resetUserPassword(body.email, body.newPassword);
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Success',
-        data: result,
-        timestamp: new Date().toISOString(),
-        path: '/api/auth/dev/reset-password',
-      };
-    } catch (error) {
-      this.logger.error(`Reset password error: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  // Test endpoint for debugging token validation
-  @Get('test-auth')
-  @UseGuards(JwtAuthGuard)
-  testAuth(@Req() req) {
-    this.logger.log(`Test auth endpoint called with user: ${JSON.stringify(req.user)}`);
-    return {
-      success: true,
-      message: 'Authentication is working correctly',
-      user: req.user,
-      timestamp: new Date().toISOString()
-    };
   }
 } 
