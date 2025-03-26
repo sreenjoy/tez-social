@@ -27,6 +27,9 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
     router.push(tab === 'signin' ? '/auth/login' : '/auth/register');
   };
 
+  // Adjust spacing for signup to prevent scrolling
+  const isSignup = activeTab === 'signup';
+
   return (
     <Box
       sx={{
@@ -200,7 +203,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          p: { xs: 3, md: 6 },
+          p: { xs: isSignup ? 2 : 3, md: isSignup ? 4 : 6 },
           backgroundColor: isDark ? '#0f172a' : '#f8fafc',
           minHeight: { xs: 'auto', md: '100vh' },
           backgroundImage: isDark 
@@ -215,13 +218,13 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            mt: isMobile ? 4 : 0,
+            mt: isMobile ? (isSignup ? 2 : 4) : 0,
           }}
         >
           {!isMobile && (
             <Box 
               sx={{ 
-                mb: 5, 
+                mb: isSignup ? 2 : 5, 
                 maxWidth: 360, 
                 width: '100%', 
                 textAlign: 'center' 
@@ -231,25 +234,27 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
                 variant="h4" 
                 component="h2" 
                 sx={{ 
-                  mb: 1.5, 
+                  mb: isSignup ? 0.5 : 1.5, 
                   fontWeight: 700,
                   color: isDark ? 'white' : '#1a2b42',
-                  fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                  fontSize: { xs: '1.5rem', sm: isSignup ? '1.5rem' : '1.75rem' },
                   letterSpacing: '-0.02em'
                 }}
               >
                 Welcome to tez.social
               </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                  fontWeight: 400,
-                  fontSize: '1rem'
-                }}
-              >
-                Your all-in-one solution for managing customer relationships
-              </Typography>
+              {!isSignup && (
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                    fontWeight: 400,
+                    fontSize: '1rem'
+                  }}
+                >
+                  Your all-in-one solution for managing customer relationships
+                </Typography>
+              )}
             </Box>
           )}
 
@@ -262,7 +267,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
               width: '100%',
               maxWidth: 360,
               mx: 'auto',
-              mb: 4,
+              mb: isSignup ? 2 : 4,
               boxShadow: isDark ? '0 4px 12px rgba(0, 0, 0, 0.1)' : '0 4px 12px rgba(0, 0, 0, 0.05)',
               border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
               transition: 'all 0.3s ease',
@@ -274,7 +279,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
               color="primary"
               onClick={() => handleTabChange('signin')}
               sx={{ 
-                py: 1.5,
+                py: isSignup ? 1 : 1.5,
                 borderRadius: 0,
                 fontWeight: 500,
                 color: activeTab === 'signin' 
@@ -302,7 +307,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
               color="primary"
               onClick={() => handleTabChange('signup')}
               sx={{ 
-                py: 1.5,
+                py: isSignup ? 1 : 1.5,
                 borderRadius: 0,
                 fontWeight: 500,
                 color: activeTab === 'signup' 
@@ -326,20 +331,22 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             </Button>
           </Box>
 
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              mb: 3, 
-              textAlign: 'center',
-              maxWidth: 360,
-              mx: 'auto',
-              color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'
-            }}
-          >
-            {activeTab === 'signin' 
-              ? 'Enter your email and password to sign in' 
-              : 'Create your account to get started'}
-          </Typography>
+          {!isSignup && (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mb: 3, 
+                textAlign: 'center',
+                maxWidth: 360,
+                mx: 'auto',
+                color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'
+              }}
+            >
+              {activeTab === 'signin' 
+                ? 'Enter your email and password to sign in' 
+                : 'Create your account to get started'}
+            </Typography>
+          )}
 
           {/* Auth form content */}
           <Box sx={{ width: '100%', maxWidth: 360, mx: 'auto' }}>
@@ -349,7 +356,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
           {/* Copyright */}
           <Box 
             sx={{ 
-              mt: 4, 
+              mt: isSignup ? 2 : 4, 
               textAlign: 'center',
               color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
               fontSize: '0.75rem'
