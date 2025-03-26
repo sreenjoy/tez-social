@@ -46,7 +46,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
         <ThemeToggle />
       </Box>
 
-      <Container component="main" maxWidth="xs" className="flex flex-col flex-grow justify-center py-12">
+      <Container component="main" maxWidth="xs" className="flex flex-col flex-grow justify-center py-4">
         <Box
           sx={{
             display: 'flex',
@@ -54,23 +54,23 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             alignItems: 'center',
           }}
         >
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ 
-              width: 48, 
-              height: 48, 
+              width: 40, 
+              height: 40, 
               borderRadius: '50%', 
               bgcolor: 'primary.main', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center' 
             }}>
-              <Typography variant="h5" color="white">T</Typography>
+              <Typography variant="h6" color="white">T</Typography>
             </Box>
             <Typography component="h1" variant="h5" color="primary.main" fontWeight="bold">
               tez.social
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 1 }}>
             Web3's Telegram CRM Solution
           </Typography>
 
@@ -105,12 +105,12 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
               />
             </Tabs>
             
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: 2 }}>
               {children}
             </Box>
           </Paper>
           
-          <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 5 }}>
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
             <Link href="/privacy-policy" className="text-blue-600 dark:text-blue-400 hover:underline">
               Privacy Policy
             </Link>

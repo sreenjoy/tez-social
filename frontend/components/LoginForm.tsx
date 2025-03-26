@@ -29,13 +29,13 @@ const LoginForm: React.FC = () => {
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
       {(error || authError) && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 1 }}>
           {error || authError}
         </Alert>
       )}
       
       <TextField
-        margin="normal"
+        margin="dense"
         required
         fullWidth
         id="email"
@@ -46,10 +46,11 @@ const LoginForm: React.FC = () => {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         disabled={isLoading || redirecting}
+        size="small"
       />
       
       <TextField
-        margin="normal"
+        margin="dense"
         required
         fullWidth
         name="password"
@@ -60,6 +61,7 @@ const LoginForm: React.FC = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         disabled={isLoading || redirecting}
+        size="small"
       />
       
       <Button
@@ -68,7 +70,7 @@ const LoginForm: React.FC = () => {
         variant="contained"
         color="primary"
         disabled={isLoading || redirecting}
-        sx={{ mt: 3, mb: 2 }}
+        sx={{ mt: 2, mb: 1 }}
       >
         {isLoading ? (
           <CircularProgress size={24} color="inherit" />
@@ -79,7 +81,7 @@ const LoginForm: React.FC = () => {
         )}
       </Button>
       
-      <Box sx={{ textAlign: 'center', mt: 2 }}>
+      <Box sx={{ textAlign: 'center', mt: 1 }}>
         <Button 
           variant="text" 
           color="primary" 

@@ -74,13 +74,13 @@ const RegisterForm: React.FC = () => {
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
       {(error || authError) && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 1 }}>
           {error || authError}
         </Alert>
       )}
       
       <TextField
-        margin="normal"
+        margin="dense"
         required
         fullWidth
         id="username"
@@ -91,10 +91,11 @@ const RegisterForm: React.FC = () => {
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         disabled={isLoading || redirecting}
+        size="small"
       />
       
       <TextField
-        margin="normal"
+        margin="dense"
         required
         fullWidth
         id="email"
@@ -104,10 +105,11 @@ const RegisterForm: React.FC = () => {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         disabled={isLoading || redirecting}
+        size="small"
       />
       
       <TextField
-        margin="normal"
+        margin="dense"
         required
         fullWidth
         name="password"
@@ -119,10 +121,12 @@ const RegisterForm: React.FC = () => {
         onChange={(e) => setPassword(e.target.value)}
         disabled={isLoading || redirecting}
         helperText="Must be at least 6 characters long"
+        FormHelperTextProps={{ sx: { mt: 0.5, mb: 0 } }}
+        size="small"
       />
       
       <TextField
-        margin="normal"
+        margin="dense"
         required
         fullWidth
         name="confirmPassword"
@@ -133,6 +137,7 @@ const RegisterForm: React.FC = () => {
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         disabled={isLoading || redirecting}
+        size="small"
       />
       
       <Button
@@ -141,7 +146,7 @@ const RegisterForm: React.FC = () => {
         variant="contained"
         color="primary"
         disabled={isLoading || redirecting}
-        sx={{ mt: 3, mb: 2 }}
+        sx={{ mt: 2, mb: 1 }}
       >
         {isLoading ? (
           <CircularProgress size={24} color="inherit" />
