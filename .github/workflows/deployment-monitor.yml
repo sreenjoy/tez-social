@@ -1,0 +1,153 @@
+name: Deployment Monitor
+
+on:
+  # Run every 30 minutes
+  schedule:
+    - cron: '*/30 * * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of check to perform'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - vercel
+          - railway
+
+jobs:
+  monitor-deployments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Check Railway deployment
+        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'railway' }}
+        id: check_railway
+        run: |
+          echo "Checking Railway deployment status..."
+          BACKEND_URL="https://tez-social-production.up.railway.app"
+          
+          # Test if the backend API is accessible
+          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL)
+          BACKEND_API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL/api/health || echo "500")
+          
+          echo "Backend status code: $BACKEND_STATUS"
+          echo "Backend API status code: $BACKEND_API_STATUS"
+          
+          if [[ "$BACKEND_STATUS" == "200" && "$BACKEND_API_STATUS" == "200" ]]; then
+            echo "✅ Railway backend is healthy"
+            echo "railway_status=healthy" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Railway backend might have issues"
+            echo "railway_status=unhealthy" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Vercel deployment
+        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'vercel' }}
+        id: check_vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "Checking Vercel deployment status..."
+          
+          # Get the latest deployment
+          LATEST_DEPLOYMENT=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=1&teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID")
+          
+          # Extract deployment details
+          DEPLOYMENT_ID=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].uid')
+          DEPLOYMENT_STATE=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].state')
+          DEPLOYMENT_URL=$(echo $LATEST_DEPLOYMENT | jq -r '.deployments[0].url')
+          
+          echo "Latest deployment ID: $DEPLOYMENT_ID"
+          echo "Deployment state: $DEPLOYMENT_STATE"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          
+          # Check if the deployment is ready
+          if [[ "$DEPLOYMENT_STATE" == "READY" ]]; then
+            # Test if the frontend is accessible
+            FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DEPLOYMENT_URL)
+            
+            if [[ "$FRONTEND_STATUS" == "200" ]]; then
+              echo "✅ Vercel frontend is healthy"
+              echo "vercel_status=healthy" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️ Vercel frontend returns $FRONTEND_STATUS"
+              echo "vercel_status=unhealthy" >> $GITHUB_OUTPUT
+              echo "vercel_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+              echo "vercel_deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⚠️ Vercel deployment is not ready (state: $DEPLOYMENT_STATE)"
+            echo "vercel_status=deploying" >> $GITHUB_OUTPUT
+            echo "vercel_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+            echo "vercel_deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine next action
+        id: next_action
+        run: |
+          RAILWAY_STATUS="${{ steps.check_railway.outputs.railway_status }}"
+          VERCEL_STATUS="${{ steps.check_vercel.outputs.vercel_status }}"
+          
+          if [[ "$RAILWAY_STATUS" == "unhealthy" ]]; then
+            echo "⚠️ Railway backend is unhealthy, triggering backend fix workflow"
+            echo "workflow=fix-railway" >> $GITHUB_OUTPUT
+          elif [[ "$VERCEL_STATUS" == "unhealthy" ]]; then
+            echo "⚠️ Vercel frontend is unhealthy, triggering frontend fix workflow"
+            echo "workflow=fix-vercel" >> $GITHUB_OUTPUT
+          elif [[ "$VERCEL_STATUS" == "deploying" ]]; then
+            echo "⏳ Vercel is still deploying, will check again later"
+            echo "workflow=wait" >> $GITHUB_OUTPUT
+          else
+            echo "✅ All deployments are healthy"
+            echo "workflow=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger fix workflow if needed
+        if: steps.next_action.outputs.workflow != 'none' && steps.next_action.outputs.workflow != 'wait'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: ${{ steps.next_action.outputs.workflow }}.yml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: |-
+            {
+              "deployment_id": "${{ steps.check_vercel.outputs.vercel_deployment_id || '' }}",
+              "deployment_url": "${{ steps.check_vercel.outputs.vercel_url || '' }}"
+            }
+
+      - name: Create deployment status report
+        run: |
+          echo "## Deployment Status Report" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Railway Backend" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ steps.check_railway.outputs.railway_status }}" == "healthy" ]]; then
+            echo "✅ **Healthy** - Backend API is responding correctly" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Unhealthy** - Backend API is not responding correctly" >> $GITHUB_STEP_SUMMARY
+            echo "- Triggering fix workflow: \`fix-railway\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Vercel Frontend" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ steps.check_vercel.outputs.vercel_status }}" == "healthy" ]]; then
+            echo "✅ **Healthy** - Frontend is responding correctly" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ steps.check_vercel.outputs.vercel_status }}" == "deploying" ]]; then
+            echo "⏳ **Deploying** - Frontend deployment is still in progress" >> $GITHUB_STEP_SUMMARY
+            echo "- Deployment ID: \`${{ steps.check_vercel.outputs.vercel_deployment_id }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Unhealthy** - Frontend is not responding correctly" >> $GITHUB_STEP_SUMMARY
+            echo "- Deployment URL: [https://${{ steps.check_vercel.outputs.vercel_url }}](https://${{ steps.check_vercel.outputs.vercel_url }})" >> $GITHUB_STEP_SUMMARY
+            echo "- Deployment ID: \`${{ steps.check_vercel.outputs.vercel_deployment_id }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Triggering fix workflow: \`fix-vercel\`" >> $GITHUB_STEP_SUMMARY
+          fi 
