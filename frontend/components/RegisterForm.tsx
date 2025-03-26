@@ -6,7 +6,8 @@ import {
   InputAdornment, 
   IconButton,
   FormHelperText,
-  CircularProgress
+  CircularProgress,
+  Typography
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
@@ -115,13 +116,17 @@ const RegisterForm = () => {
   const inputStyles = {
     '& .MuiOutlinedInput-root': {
       bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-      borderRadius: '10px',
+      borderRadius: '12px',
     },
     mb: 3
   };
 
-  const labelProps = {
-    sx: { color: isDark ? 'rgba(255, 255, 255, 0.7)' : undefined }
+  const labelStyle = {
+    display: 'block',
+    color: isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)',
+    fontWeight: 500, 
+    fontSize: '0.9rem',
+    mb: 1
   };
   
   return (
@@ -143,94 +148,110 @@ const RegisterForm = () => {
         </FormHelperText>
       )}
       
-      <TextField
-        fullWidth
-        id="username"
-        name="username"
-        label="Username"
-        variant="outlined"
-        value={formData.username}
-        onChange={handleChange}
-        error={!!formErrors.username}
-        helperText={formErrors.username}
-        placeholder="Username"
-        sx={inputStyles}
-        InputLabelProps={labelProps}
-      />
+      <Box sx={{ mb: 3 }}>
+        <Typography sx={labelStyle}>Username</Typography>
+        <TextField
+          fullWidth
+          id="username"
+          name="username"
+          variant="outlined"
+          value={formData.username}
+          onChange={handleChange}
+          error={!!formErrors.username}
+          helperText={formErrors.username}
+          placeholder="Username"
+          sx={inputStyles}
+          InputLabelProps={{ shrink: true }}
+          InputProps={{
+            sx: { height: 56 }
+          }}
+        />
+      </Box>
       
-      <TextField
-        fullWidth
-        id="email"
-        name="email"
-        label="Email"
-        type="email"
-        variant="outlined"
-        value={formData.email}
-        onChange={handleChange}
-        error={!!formErrors.email}
-        helperText={formErrors.email}
-        placeholder="your.email@example.com"
-        sx={inputStyles}
-        InputLabelProps={labelProps}
-      />
+      <Box sx={{ mb: 3 }}>
+        <Typography sx={labelStyle}>Email</Typography>
+        <TextField
+          fullWidth
+          id="email"
+          name="email"
+          type="email"
+          variant="outlined"
+          value={formData.email}
+          onChange={handleChange}
+          error={!!formErrors.email}
+          helperText={formErrors.email}
+          placeholder="your.email@example.com"
+          sx={inputStyles}
+          InputLabelProps={{ shrink: true }}
+          InputProps={{
+            sx: { height: 56 }
+          }}
+        />
+      </Box>
       
-      <TextField
-        fullWidth
-        id="password"
-        name="password"
-        label="Password"
-        type={showPassword ? 'text' : 'password'}
-        variant="outlined"
-        value={formData.password}
-        onChange={handleChange}
-        error={!!formErrors.password}
-        helperText={formErrors.password || "Must be at least 6 characters"}
-        sx={inputStyles}
-        InputLabelProps={labelProps}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={() => setShowPassword(!showPassword)}
-                edge="end"
-                sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
+      <Box sx={{ mb: 3 }}>
+        <Typography sx={labelStyle}>Password</Typography>
+        <TextField
+          fullWidth
+          id="password"
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          variant="outlined"
+          value={formData.password}
+          onChange={handleChange}
+          error={!!formErrors.password}
+          helperText={formErrors.password || "Must be at least 6 characters"}
+          sx={inputStyles}
+          InputLabelProps={{ shrink: true }}
+          InputProps={{
+            sx: { height: 56 },
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                  sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
       
-      <TextField
-        fullWidth
-        id="confirmPassword"
-        name="confirmPassword"
-        label="Confirm Password"
-        type={showConfirmPassword ? 'text' : 'password'}
-        variant="outlined"
-        value={formData.confirmPassword}
-        onChange={handleChange}
-        error={!!formErrors.confirmPassword}
-        helperText={formErrors.confirmPassword}
-        sx={inputStyles}
-        InputLabelProps={labelProps}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle confirm password visibility"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                edge="end"
-                sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
-              >
-                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={labelStyle}>Confirm Password</Typography>
+        <TextField
+          fullWidth
+          id="confirmPassword"
+          name="confirmPassword"
+          type={showConfirmPassword ? 'text' : 'password'}
+          variant="outlined"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          error={!!formErrors.confirmPassword}
+          helperText={formErrors.confirmPassword}
+          sx={inputStyles}
+          InputLabelProps={{ shrink: true }}
+          InputProps={{
+            sx: { height: 56 },
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle confirm password visibility"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  edge="end"
+                  sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : undefined }}
+                >
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
       
       <Button
         type="submit"
@@ -239,8 +260,8 @@ const RegisterForm = () => {
         color="primary"
         disabled={loading}
         sx={{
-          py: 1.5,
-          borderRadius: '10px',
+          py: 1.8,
+          borderRadius: '12px',
           boxShadow: '0 4px 10px rgba(59, 130, 246, 0.25)',
           bgcolor: '#3b82f6',
           '&:hover': {
@@ -248,13 +269,14 @@ const RegisterForm = () => {
           },
           transition: 'all 0.2s ease',
           fontWeight: 500,
-          fontSize: '0.9rem',
+          fontSize: '1rem',
+          height: 56
         }}
       >
         {loading ? (
           <CircularProgress size={24} color="inherit" />
         ) : (
-          'Create Account'
+          'Sign Up'
         )}
       </Button>
     </Box>

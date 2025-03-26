@@ -40,7 +40,9 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
         backgroundImage: isDark 
           ? 'radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)'
           : 'radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(99, 102, 241, 0.08) 0%, transparent 50%)',
-        padding: { xs: 3, sm: 4 }
+        padding: { xs: 3, sm: 4 },
+        pt: { xs: 8, sm: 10 },
+        pb: { xs: 8, sm: 10 }
       }}
     >
       <Box 
@@ -58,7 +60,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
         sx={{
           width: '100%',
           maxWidth: 400,
-          mb: 6
+          mb: 4
         }}
       >
         <Typography 
@@ -97,7 +99,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             overflow: 'hidden',
             width: '100%',
             mx: 'auto',
-            mb: 5,
+            mb: 4,
             boxShadow: isDark ? '0 4px 12px rgba(0, 0, 0, 0.1)' : '0 4px 12px rgba(0, 0, 0, 0.05)',
             border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
           }}
@@ -159,6 +161,22 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
             Sign Up
           </Button>
         </Box>
+
+        {/* Form description */}
+        <Typography
+          variant="body2"
+          sx={{
+            mb: 4,
+            color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+            fontWeight: 400,
+            fontSize: '0.875rem',
+            textAlign: 'center'
+          }}
+        >
+          {activeTab === 'signin' 
+            ? 'Enter your email and password to sign in' 
+            : 'Create your account to get started'}
+        </Typography>
       </Box>
 
       {/* Auth form content */}
@@ -166,9 +184,32 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, initialTab = 'signin'
         {children}
       </Box>
 
+      {/* Skip Login Button - Only shown on signup page */}
+      {activeTab === 'signup' && (
+        <Button
+          variant="text"
+          color="primary"
+          onClick={() => router.push('/dashboard')}
+          sx={{
+            mb: 4,
+            color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+            '&:hover': {
+              bgcolor: 'transparent',
+              color: isDark ? 'white' : '#1a2b42',
+            },
+            fontWeight: 500,
+            fontSize: '0.9rem',
+          }}
+        >
+          Skip Login
+        </Button>
+      )}
+
       {/* Copyright */}
       <Box 
         sx={{ 
+          position: 'absolute',
+          bottom: 16,
           textAlign: 'center',
           color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
           fontSize: '0.75rem'
