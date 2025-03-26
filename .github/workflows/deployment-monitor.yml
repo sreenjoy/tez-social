@@ -28,7 +28,7 @@ on:
 # Add permissions to allow workflow triggering
 permissions:
   actions: write
-  contents: read
+  contents: write
   deployments: write
   id-token: write
   issues: write
@@ -45,6 +45,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+
+      - name: Create personal access token
+        id: create-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Check Railway deployment
         if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'railway' }}
@@ -90,16 +97,23 @@ jobs:
           echo "Deployment state: $DEPLOYMENT_STATE"
           echo "Deployment URL: $DEPLOYMENT_URL"
           
+          # Check all recent deployments
+          ALL_DEPLOYMENTS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?limit=5&teamId=$VERCEL_ORG_ID&projectId=$VERCEL_PROJECT_ID")
+          
+          # Count error deployments
+          ERROR_COUNT=$(echo $ALL_DEPLOYMENTS | jq -r '.deployments | map(select(.state == "ERROR")) | length')
+          echo "Number of error deployments: $ERROR_COUNT"
+          
           # Check if the deployment is ready
           if [[ "$DEPLOYMENT_STATE" == "READY" ]]; then
             # Test if the frontend is accessible
             FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DEPLOYMENT_URL)
             
-            if [[ "$FRONTEND_STATUS" == "200" ]]; then
+            if [[ "$FRONTEND_STATUS" == "200" && "$ERROR_COUNT" -eq 0 ]]; then
               echo "✅ Vercel frontend is healthy"
               echo "vercel_status=healthy" >> $GITHUB_OUTPUT
             else
-              echo "⚠️ Vercel frontend returns $FRONTEND_STATUS"
+              echo "⚠️ Vercel frontend returns $FRONTEND_STATUS (with $ERROR_COUNT error deployments)"
               echo "vercel_status=unhealthy" >> $GITHUB_OUTPUT
               echo "vercel_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
               echo "vercel_deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
@@ -131,25 +145,55 @@ jobs:
             echo "workflow=none" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create personal access token
-        id: create-token
-        if: steps.next_action.outputs.workflow != 'none' && steps.next_action.outputs.workflow != 'wait'
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - name: Trigger fix workflow if needed
         if: steps.next_action.outputs.workflow != 'none' && steps.next_action.outputs.workflow != 'wait'
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: ${{ steps.next_action.outputs.workflow }}.yml
-          token: ${{ steps.create-token.outputs.token || secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.create-token.outputs.token }}
           inputs: |-
             {
               "deployment_id": "${{ steps.check_vercel.outputs.vercel_deployment_id || '' }}",
               "deployment_url": "${{ steps.check_vercel.outputs.vercel_url || '' }}"
             }
+
+      - name: Force fix all deployments if multiple checks have failed
+        if: github.event_name == 'schedule'
+        id: force_fix
+        run: |
+          # Check if we have persistent failures by looking at workflow run history
+          WORKFLOW_HISTORY=$(curl -s -H "Authorization: Bearer ${{ steps.create-token.outputs.token }}" "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ github.workflow }}/runs?per_page=5")
+          
+          # Count failed runs
+          FAILED_COUNT=$(echo $WORKFLOW_HISTORY | jq -r '.workflow_runs | map(select(.conclusion == "failure")) | length')
+          echo "Number of recent failed runs: $FAILED_COUNT"
+          
+          if [[ $FAILED_COUNT -ge 3 ]]; then
+            echo "Multiple failures detected, triggering comprehensive fix workflows"
+            echo "trigger_fix_all=true" >> $GITHUB_OUTPUT
+          else
+            echo "trigger_fix_all=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comprehensive fix for persistent issues
+        if: steps.force_fix.outputs.trigger_fix_all == 'true'
+        run: |
+          echo "Triggering comprehensive fix for persistent deployment issues"
+          
+          # Trigger both fix workflows
+          curl -X POST \
+            -H "Authorization: Bearer ${{ steps.create-token.outputs.token }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/fix-vercel.yml/dispatches" \
+            -d '{"ref":"main", "inputs":{"deployment_id":"auto-detect", "deployment_url":"auto-detect"}}'
+            
+          curl -X POST \
+            -H "Authorization: Bearer ${{ steps.create-token.outputs.token }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/fix-railway.yml/dispatches" \
+            -d '{"ref":"main"}'
+            
+          echo "✅ Triggered comprehensive fix for all deployment platforms"
 
       - name: Create deployment status report
         run: |
