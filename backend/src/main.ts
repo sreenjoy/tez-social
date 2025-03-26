@@ -5,49 +5,73 @@ import { HttpExceptionFilter, AllExceptionsFilter } from './common/filters';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  
+  try {
+    logger.log('Bootstrapping application...');
+    const app = await NestFactory.create(AppModule, {
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    });
 
-  // Enable validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-    transformOptions: { enableImplicitConversion: true },
-  }));
+    // Enable validation
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    }));
 
-  // Apply global filters (order matters - more specific first)
-  app.useGlobalFilters(
-    new HttpExceptionFilter(),
-    new AllExceptionsFilter(),
-  );
+    // Apply global filters (order matters - more specific first)
+    app.useGlobalFilters(
+      new HttpExceptionFilter(),
+      new AllExceptionsFilter(),
+    );
 
-  // Set global prefix
-  app.setGlobalPrefix('api');
+    // Set global prefix
+    app.setGlobalPrefix('api');
 
-  // Enable CORS
-  app.enableCors({
-    origin: '*', // In production, you should restrict this to your frontend domain
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
+    // Set headers for security
+    app.use((req, res, next) => {
+      res.header('X-Content-Type-Options', 'nosniff');
+      res.header('X-Frame-Options', 'DENY');
+      res.header('X-XSS-Protection', '1; mode=block');
+      next();
+    });
 
-  // Handle shutdown signals
-  process.on('SIGTERM', async () => {
-    logger.log('SIGTERM signal received: closing HTTP server');
-    await app.close();
-    logger.log('HTTP server closed');
-    process.exit(0);
-  });
+    // Enable CORS for production
+    const allowedOrigins = process.env.ALLOWED_ORIGINS 
+      ? process.env.ALLOWED_ORIGINS.split(',') 
+      : ['https://tez-social.vercel.app', 'http://localhost:3000'];
+      
+    app.enableCors({
+      origin: allowedOrigins,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    });
 
-  process.on('SIGINT', async () => {
-    logger.log('SIGINT signal received: closing HTTP server');
-    await app.close();
-    logger.log('HTTP server closed');
-    process.exit(0);
-  });
+    // Handle shutdown signals
+    process.on('SIGTERM', async () => {
+      logger.log('SIGTERM signal received: closing HTTP server');
+      await app.close();
+      logger.log('HTTP server closed');
+      process.exit(0);
+    });
 
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
-  logger.log(`Application running on port ${port}`);
+    process.on('SIGINT', async () => {
+      logger.log('SIGINT signal received: closing HTTP server');
+      await app.close();
+      logger.log('HTTP server closed');
+      process.exit(0);
+    });
+
+    const port = process.env.PORT || 3001;
+    await app.listen(port);
+    logger.log(`Application is running on port ${port}`);
+    logger.log(`API Documentation available at: http://localhost:${port}/api`);
+  } catch (error) {
+    logger.error(`Error during bootstrap: ${error.message}`);
+    logger.error(error.stack);
+    process.exit(1);
+  }
 }
+
 bootstrap();
