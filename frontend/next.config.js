@@ -41,7 +41,6 @@ const nextConfig = {
   // Experimental features
   experimental: {
     esmExternals: 'loose',
-    optimizeCss: true
   },
   // Disable type checking in build for speed
   typescript: {
@@ -56,13 +55,14 @@ const nextConfig = {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
+  // Configure API rewrites for production
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api/:path*` : '/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL || 'https://tez-social-production.up.railway.app/api/:path*',
       },
-    ]
+    ];
   },
   async headers() {
     return [
