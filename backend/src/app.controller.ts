@@ -36,19 +36,23 @@ export class AppController {
       
       // Check the database by performing a simple operation
       const isConnected = state === 1;
-      let pingResult = null;
-      let mongoVersion = null;
+      let pingResult: any = null;
+      let mongoVersion: string | null = null;
       
-      if (isConnected) {
+      if (isConnected && this.mongoConnection.db) {
         // Only try to ping if connected
-        pingResult = await this.mongoConnection.db.admin().ping();
+        try {
+          pingResult = await this.mongoConnection.db.admin().ping();
+        } catch (pingError) {
+          pingResult = { ok: 0 };
+        }
         
         // Only try to get version if connected
         try {
           const serverInfo = await this.mongoConnection.db.admin().serverInfo();
-          mongoVersion = serverInfo?.version || null;
+          mongoVersion = serverInfo?.version?.toString() || null;
         } catch (versionError) {
-          mongoVersion = 'Error getting version';
+          mongoVersion = null;
         }
       }
       
