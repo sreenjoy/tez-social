@@ -12,6 +12,16 @@ on:
         required: false
         default: '1'
 
+
+# Add permissions needed for GitHub token
+permissions:
+  actions: write
+  contents: write
+  deployments: write
+  id-token: write
+  issues: write
+  pull-requests: write
+
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
